@@ -1,0 +1,3 @@
+DROP TABLE IF EXISTS table_shard_keys;
+DROP TABLE IF EXISTS fk_edges;
+DROP TABLE IF EXISTS columns;

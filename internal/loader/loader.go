@@ -25,8 +25,16 @@ func Loadservices() error {
 		logger.Logger.Error("Failed to ensure database exists", "error", err)
 		return err
 	}
+	dsn := db.BuildDSN()
+	err = db.ApplyMigrations(dsn)
+	if err != nil {
+		logger.Logger.Error("Failed to apply migrations", "error", err)
+		return err
+	}
+	
 
-	logger.Logger.Info("Env Loaded & Database Created")
+
+	logger.Logger.Info("Env Loaded & Database Created", "status", "success")
 
 	return nil
 }
