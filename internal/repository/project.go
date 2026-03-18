@@ -13,8 +13,8 @@ type Project struct {
 	Description string `json:"description"`
 	Status      string `json:"status"`
 	ShardCount  int    `json:"shard_count"`
-	CreatedAt   string `json:"created_at"`
-	UpdatedAt   string `json:"updated_at"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
 }
 
 // Project
@@ -38,11 +38,11 @@ func (r *ProjectRepository) ProjectAdd(ctx context.Context, name string, descrip
 		Description: description,
 		Status:      "inactive",
 		ShardCount:  0,
-		CreatedAt:   time.Now().String(),
+		CreatedAt:   time.Now(),
 	}
-	query := `INSERT INTO projects (id,name,status,shard_count,created_at)
-			  VALUES ($1, $2, $3, $4, $5)`
-	_, err := r.db.ExecContext(ctx, query, project.ID, project.Name, project.Status, project.ShardCount, project.CreatedAt)
+	query := `INSERT INTO projects (id,name,description,status,shard_count,created_at)
+			  VALUES ($1, $2, $3, $4, $5, $6)`
+	_, err := r.db.ExecContext(ctx, query, project.ID, project.Name, project.Description, project.Status, project.ShardCount, project.CreatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -50,7 +50,7 @@ func (r *ProjectRepository) ProjectAdd(ctx context.Context, name string, descrip
 }
 
 func (r *ProjectRepository) ProjectList(ctx context.Context) ([]*Project, error) {
-	query := `SELECT id, name, status, shard_count, created_at, updated_at FROM projects ORDER BY created_at DESC`
+	query := `SELECT id, name,description, status, shard_count, created_at, updated_at FROM projects ORDER BY created_at DESC`
 	rows, err := r.db.QueryContext(ctx, query)
 	if err != nil {
 		return nil, err

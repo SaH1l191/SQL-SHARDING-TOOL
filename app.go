@@ -51,6 +51,7 @@ func (a *App) Run(ctx context.Context) error {
 	}()
 
 	<-ctx.Done()
+	//pauses here indefinitely unless the signal is received or catched by NotfiyContext in main.go
 	logger.Logger.Info("Shutdown signal received, cleaning up...")
 	return a.cleanup()
 }
@@ -58,10 +59,11 @@ func (a *App) Run(ctx context.Context) error {
 // buildServer wires repository → service → handler → router.
 // Only constructor calls live here — no logic, no conditionals. 
 func (a *App) buildServer() *http.Server {
+	// handler -> service -> repository
 	projectRepo    := repository.NewProjectRepository(a.db)
 	projectService := service.NewProjectService(projectRepo)
 	projectHandler := handler.NewProjectHandler(projectService)
-
+	
 	r := router.New()
 	r.RegisterHealthRoute()
 	r.RegisterProjectRoutes(projectHandler)

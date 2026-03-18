@@ -29,8 +29,8 @@ func (r *Router) RegisterProjectRoutes(h *handler.ProjectHandler) {
 
 	projects := v1.Group("/projects")
 	{
-		projects.POST("", h.CreateProject)
-		projects.GET("", h.GetProjects)
+		projects.POST("/create", h.CreateProject)
+		projects.GET("/list", h.GetProjects)
 		projects.DELETE("/:id", h.DeleteProject)
 		projects.PUT("/:id/activate", h.ActivateProject)
 		projects.PUT("/:id/deactivate", h.DeactivateProject)

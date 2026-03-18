@@ -25,7 +25,7 @@ func NewConnectionStore() *ConnectionStore {
 	}
 }
 
-// thread safe concurrent reads
+// thread safe concurrent reads 
 func (c *ConnectionStore) Get(projectID, shardID string) (*sql.DB, error) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()

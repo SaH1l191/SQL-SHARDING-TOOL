@@ -7,7 +7,7 @@ import (
 )
  
 var (
-	ErrInvalidInput    = errors.New("invalid input")
+	ErrInvalidInput    = errors.New("Invalid input")
 	ErrProjectNotFound = errors.New("project not found")
 )
  
@@ -25,7 +25,7 @@ func NewProjectService(repo *repository.ProjectRepository) *ProjectService {
 }
 
 func (s *ProjectService) CreateProject(ctx context.Context, req *CreateProjectRequest) (*repository.Project, error) {
-	if req.Name == "" {
+	if req.Name == ""  || req.Description == "" {
 		return nil, ErrInvalidInput
 	}
 	return s.repo.ProjectAdd(ctx, req.Name, req.Description)
