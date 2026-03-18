@@ -64,9 +64,13 @@ func (a *App) buildServer() *http.Server {
 	projectService := service.NewProjectService(projectRepo)
 	projectHandler := handler.NewProjectHandler(projectService)
 	
+	shardRepo    := repository.NewShardRepository(a.db)
+	shardService := service.NewShardService(shardRepo)
+	shardHandler := handler.NewShardHandler(shardService)
 	r := router.New()
 	r.RegisterHealthRoute()
 	r.RegisterProjectRoutes(projectHandler)
+	r.RegisterShardRoutes(shardHandler)
 
 	return &http.Server{
 		Addr:    ":8080",

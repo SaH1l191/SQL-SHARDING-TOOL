@@ -1,9 +1,9 @@
 package router
 
 import (
-	"net/http"
-	"sqlsharder/internal/handler" 
 	"github.com/gin-gonic/gin"
+	"net/http"
+	"sqlsharder/internal/handler"
 )
 
 type Router struct {
@@ -13,7 +13,7 @@ type Router struct {
 func New() *Router {
 	return &Router{engine: gin.Default()}
 }
-  
+
 func (r *Router) Engine() http.Handler {
 	return r.engine
 }
@@ -37,4 +37,16 @@ func (r *Router) RegisterProjectRoutes(h *handler.ProjectHandler) {
 		projects.GET("/:id/status", h.GetProjectStatus)
 	}
 }
- 
+func (r *Router) RegisterShardRoutes(h *handler.ShardHandler) {
+	v1 := r.engine.Group("/api/v1")
+
+	shards := v1.Group("/shards")
+	{
+		shards.POST("/create", h.CreateShard)
+		shards.GET("/list", h.GetShards)
+		shards.DELETE("/:id", h.DeleteShard)
+		shards.PUT("/:id/activate", h.ActivateShard)
+		shards.PUT("/:id/deactivate", h.DeactivateShard)
+		shards.GET("/:id/status", h.GetShardStatus)
+	}
+}
