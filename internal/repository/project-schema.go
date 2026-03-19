@@ -44,12 +44,13 @@ func findMaxVer(versions []int) int {
 
 // Fetches all schema versions for a project.
 func (p *ProjectSchemaRepository) GetProjectSchemaVersions(ctx context.Context, projectID string) ([]int, error) {
-	query := `SELECT version FROM project_schema WHERE project_id = $1`
+	query := `SELECT version FROM project_schemas WHERE project_id = $1 ORDER BY version ASC`
 	rows, err := p.db.QueryContext(ctx, query, projectID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
+
 	var versions []int
 	for rows.Next() {
 		var version int
@@ -58,6 +59,11 @@ func (p *ProjectSchemaRepository) GetProjectSchemaVersions(ctx context.Context, 
 		}
 		versions = append(versions, version)
 	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
 	return versions, nil
 }
 
@@ -72,7 +78,7 @@ func (p *ProjectSchemaRepository) CreateProjectSchemaDraft(
 	schemaID := uuid.New().String()
 	now := time.Now()
 
-	query := `INSERT INTO project_schema (id,project_id,version,state,ddl_sql,created_at) VALUES ($1,$2,$3,$4,$5,$6)`
+	query := `INSERT INTO project_schemas (id,project_id,version,state,ddl_sql,created_at) VALUES ($1,$2,$3,$4,$5,$6)`
 
 	_, err = p.db.ExecContext(ctx, query, schemaID, projectID, nextVersion, "draft", ddlSQL, now)
 	if err != nil {
@@ -95,7 +101,7 @@ func (p *ProjectSchemaRepository) CreateProjectSchemaDraft(
 func (p *ProjectSchemaRepository) ProjectSchemaUpdateDraft(ctx context.Context, schemaID string, ddlSQL string) error {
 
 	query := `
-		UPDATE project_schema
+		UPDATE project_schemas
 		SET ddl_sql = $1
 		WHERE id = $2 AND state = 'draft'
 	`
@@ -124,7 +130,7 @@ func (p *ProjectSchemaRepository) ProjectSchemaUpdateDraft(ctx context.Context, 
 func (p *ProjectSchemaRepository) ProjectSchemaDeleteDraft(ctx context.Context, schemaID string) error {
 
 	query := `
-		DELETE FROM project_schema
+		DELETE FROM project_schemas
 		WHERE id = $1 AND state = 'draft'`
 
 	result, err := p.db.ExecContext(ctx, query, schemaID)
@@ -148,7 +154,7 @@ func (p *ProjectSchemaRepository) ProjectSchemaDeleteDraft(ctx context.Context, 
 
 // Moves schema from draft → pending and sets commit time.
 func (p *ProjectSchemaRepository) ProjectSchemaCommitDraft(ctx context.Context, schemaID string) error {
-	query := `UPDATE project_schema SET state = 'pending', committed_at = $1 WHERE id = $2`
+	query := `UPDATE project_schemas SET state = 'pending', committed_at = $1 WHERE id = $2`
 	result, err := p.db.ExecContext(
 		ctx,
 		query,
@@ -176,7 +182,7 @@ func (p *ProjectSchemaRepository) ProjectSchemaCommitDraft(ctx context.Context, 
 func (p *ProjectSchemaRepository) ProjectSchemaSetApplying(ctx context.Context, schemaID string) error {
 
 	query := `
-		UPDATE project_schema
+		UPDATE project_schemas
 		SET state = 'applying'
 		WHERE id = $1
 	`
@@ -195,7 +201,7 @@ func (p *ProjectSchemaRepository) ProjectSchemaUpdateSchemaState(
 ) error {
 
 	query := `
-		UPDATE project_schema
+		UPDATE project_schemas
 		SET state = $1, error_message = $2
 		WHERE id = $3`
 
@@ -217,7 +223,7 @@ func (p *ProjectSchemaRepository) ProjectSchemaGetState(ctx context.Context, sch
 
 	query := `
 		SELECT state
-		FROM project_schema
+		FROM project_schemas
 		WHERE id = $1`
 
 	row := p.db.QueryRowContext(ctx, query, schemaID)
@@ -240,7 +246,7 @@ func (p *ProjectSchemaRepository) ProjectSchemaGetLatest(ctx context.Context, pr
 		SELECT 
 			id, project_id, version, state, ddl_sql,
 			error_message, created_at, committed_at, applied_at
-		FROM project_schema
+		FROM project_schemas
 		WHERE project_id = $1 AND version = $2
 	`
 
@@ -277,7 +283,7 @@ func (p *ProjectSchemaRepository) ProjectSchemaFetchHistory(ctx context.Context,
 		SELECT 
 			id, project_id, version, state, ddl_sql,
 			error_message, created_at, committed_at, applied_at
-		FROM project_schema
+		FROM project_schemas
 		WHERE project_id = $1
 		AND state != 'draft'
 		ORDER BY version ASC`
@@ -285,12 +291,12 @@ func (p *ProjectSchemaRepository) ProjectSchemaFetchHistory(ctx context.Context,
 		ctx,
 		query,
 		projectID,
-	)  
-	
+	)
+
 	if err != nil {
 		return nil, err
-	} 
-	defer rows.Close() 
+	}
+	defer rows.Close()
 
 	var history []ProjectSchema
 
@@ -326,7 +332,7 @@ func (p *ProjectSchemaRepository) ProjectSchemaGetBySchemaID(ctx context.Context
 		SELECT 
 			id, project_id, version, state, ddl_sql,
 			error_message, created_at, committed_at, applied_at
-		FROM project_schema
+		FROM project_schemas
 		WHERE id = $1`
 
 	row := p.db.QueryRowContext(
@@ -359,7 +365,7 @@ func (p *ProjectSchemaRepository) ProjectSchemaGetApplied(ctx context.Context, p
 	SELECT 
 		id, project_id, version, state, ddl_sql,
 		error_message, created_at, committed_at, applied_at
-	FROM project_schema
+	FROM project_schemas
 	WHERE project_id = $1 AND state = 'applied'
 	ORDER BY version DESC
 	LIMIT 1`
@@ -386,6 +392,7 @@ func (p *ProjectSchemaRepository) ProjectSchemaGetApplied(ctx context.Context, p
 	if err != nil {
 		return nil, err
 	}
+
 	return &schema, nil
 }
 
@@ -399,7 +406,7 @@ func (p *ProjectSchemaRepository) ProjectSchemaGetPending(
 		SELECT 
 			id, project_id, version, state, ddl_sql,
 			error_message, created_at, committed_at, applied_at
-		FROM project_schema
+		FROM project_schemas
 		WHERE project_id = $1 AND state = 'pending'
 		ORDER BY version ASC
 		LIMIT 1`
@@ -426,7 +433,7 @@ func (p *ProjectSchemaRepository) ProjectSchemaGetPending(
 func (p *ProjectSchemaRepository) fetchProjectSchemaVersions(ctx context.Context, projectID string) ([]int, error) {
 
 	query := `
-		SELECT version FROM project_schema
+		SELECT version FROM project_schemas
 		WHERE project_id = $1 
 	`
 
@@ -435,11 +442,11 @@ func (p *ProjectSchemaRepository) fetchProjectSchemaVersions(ctx context.Context
 		query,
 		projectID,
 	)
-	defer rows.Close()
+
 	if err != nil {
 		return nil, err
 	}
-
+	defer rows.Close()
 	var versions []int
 	var version int
 

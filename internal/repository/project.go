@@ -108,6 +108,28 @@ func (r *ProjectRepository) ProjectDeactivate(ctx context.Context, projectID str
 	return nil
 }
 
+func (r *ProjectRepository) GetProjectById(ctx context.Context, id string) (Project, error) {
+	query := `SELECT id, name, description, status, shard_count, created_at, updated_at FROM projects WHERE id=$1`
+	var project Project
+	err := r.db.QueryRowContext(ctx, query, id).Scan(&project.ID, &project.Name, &project.Description, &project.Status, &project.ShardCount, &project.CreatedAt, &project.UpdatedAt)
+	if err != nil {
+		return Project{}, err
+	}
+	return project, nil
+}
+
+func (r *ProjectRepository) GetActiveProjectId(ctx context.Context) (string,error){
+	query :=`SELECT id from projects WHERE status='active'`
+	row := r.db.QueryRowContext(ctx,query)
+	var projectId string 
+	err := row.Scan(&projectId)
+	if err != nil {
+		return "", err
+	}
+	// defer row.Close() doesnt return cursor as single row is queried not multiple rows 
+	return projectId, nil
+}
+
 func (r *ProjectRepository) FetchProjectStatus(ctx context.Context, projectID string) (string, error) {
 	query := `SELECT status FROM projects WHERE id=$1`
 	var status string

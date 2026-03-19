@@ -6,17 +6,20 @@ import (
 	"fmt"
 	"net/http"
 	"sqlsharder/internal/config"
+	"sqlsharder/internal/connections"
 	"sqlsharder/internal/handler"
 	"sqlsharder/internal/loader"
 	"sqlsharder/internal/repository"
-	"sqlsharder/internal/router" 
-	"sqlsharder/pkg/logger"
+	"sqlsharder/internal/router"
 	"sqlsharder/internal/service"
+	"sqlsharder/pkg/logger"
 )
 
 type App struct {
-	db     *sql.DB
-	server *http.Server
+	db          *sql.DB
+	server      *http.Server
+	connStore   *connections.ConnectionStore
+	connManager *connections.ConnectionManager
 }
 
 func NewApp() *App {
@@ -36,11 +39,9 @@ func (a *App) Run(ctx context.Context) error {
 		return err
 	}
 
-	 
 	config.ApplicationDatabaseConnection.ConnInstance = a.db
 
- 
-	logger.Logger.Info("Database connection established","host", config.AppDBCreds.DB_HOST,"database", config.AppDBCreds.DB_NAME,"port", config.AppDBCreds.DB_PORT)
+	logger.Logger.Info("Database connection established", "host", config.AppDBCreds.DB_HOST, "database", config.AppDBCreds.DB_NAME, "port", config.AppDBCreds.DB_PORT)
 	a.server = a.buildServer()
 
 	logger.Logger.Info("Starting HTTP server", "addr", ":8080")
@@ -57,26 +58,39 @@ func (a *App) Run(ctx context.Context) error {
 }
 
 // buildServer wires repository → service → handler → router.
-// Only constructor calls live here — no logic, no conditionals. 
+// Only constructor calls live here — no logic, no conditionals.
 func (a *App) buildServer() *http.Server {
 	// handler -> service -> repository
-	projectRepo    := repository.NewProjectRepository(a.db)
+	projectRepo := repository.NewProjectRepository(a.db)
 	projectService := service.NewProjectService(projectRepo)
 	projectHandler := handler.NewProjectHandler(projectService)
-	
-	shardRepo    := repository.NewShardRepository(a.db)
+
+	shardRepo := repository.NewShardRepository(a.db)
 	shardService := service.NewShardService(shardRepo)
 	shardHandler := handler.NewShardHandler(shardService)
 
-	schemaRepo    := repository.NewProjectSchemaRepository(a.db)
+	schemaRepo := repository.NewProjectSchemaRepository(a.db)
 	schemaService := service.NewProjectSchemaService(schemaRepo)
 	schemaHandler := handler.NewProjectSchemaHandler(schemaService)
+
+	shardConnRepo := repository.NewShardConnectionRepository(a.db)
+	shardConnService := service.NewShardConnectionService(shardConnRepo)
+	shardConnHandler := handler.NewShardConnectionHandler(shardConnService)
+
+	a.connStore = connections.NewConnectionStore()
+	a.connManager = connections.NewConnectionManager(
+		a.connStore,
+		projectRepo,
+		shardRepo,
+		shardConnRepo,
+	)
 
 	r := router.New()
 	r.RegisterHealthRoute()
 	r.RegisterProjectRoutes(projectHandler)
 	r.RegisterShardRoutes(shardHandler)
 	r.RegisterProjectSchemaRoutes(schemaHandler)
+	r.RegisterShardConnectionRoutes(shardConnHandler)
 
 	return &http.Server{
 		Addr:    ":8080",

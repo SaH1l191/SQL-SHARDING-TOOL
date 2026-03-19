@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"sqlsharder/internal/service"
 
+	// "sqlsharder/pkg/logger"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -26,6 +28,7 @@ func (h *ProjectSchemaHandler) CreateSchema(c *gin.Context) {
 
 	schema, err := h.service.CreateSchema(c.Request.Context(), &req)
 	if err != nil {
+
 		h.handleError(c, err)
 		return
 	}
@@ -63,7 +66,7 @@ func (h *ProjectSchemaHandler) GetSchemaByID(c *gin.Context) {
 	c.JSON(http.StatusOK, schema)
 }
 
-// UpdateSchema PUT /api/v1/schemas/:id
+// UpdateSchema PUT /api/v1/schemas/:id but dont change version
 func (h *ProjectSchemaHandler) UpdateSchema(c *gin.Context) {
 	var req service.UpdateSchemaRequest
 	// Bind schema_id from the URL param, not from the body
@@ -83,7 +86,7 @@ func (h *ProjectSchemaHandler) UpdateSchema(c *gin.Context) {
 	c.JSON(http.StatusOK, schema)
 }
 
-// DeleteSchema DELETE /api/v1/schemas/:id
+// DeleteSchema DELETE /api/v1/schemas/:id : deletes latest version so new version : prevVersion
 func (h *ProjectSchemaHandler) DeleteSchema(c *gin.Context) {
 	id := c.Param("id")
 
@@ -97,7 +100,8 @@ func (h *ProjectSchemaHandler) DeleteSchema(c *gin.Context) {
 
 // CommitSchema PUT /api/v1/schemas/:id/commit  (draft → pending)
 // FIX: renamed from ActivateSchema — "activate" implies running DDL.
-//      "commit" correctly means "lock in this draft and queue it for execution".
+//
+//	"commit" correctly means "lock in this draft and queue it for execution".
 func (h *ProjectSchemaHandler) CommitSchema(c *gin.Context) {
 	id := c.Param("id")
 
@@ -124,9 +128,10 @@ func (h *ProjectSchemaHandler) GetSchemaStatus(c *gin.Context) {
 
 // GetLatestSchema GET /api/v1/projects/:project_id/schemas/latest
 // FIX: uses path param :project_id, not c.Param("project_id") on a flat route.
-//      This route is registered under /projects/:project_id/schemas/latest.
+//
+//	This route is registered under /projects/:project_id/schemas/latest.
 func (h *ProjectSchemaHandler) GetLatestSchema(c *gin.Context) {
-	projectID := c.Param("project_id")
+	projectID := c.Query("project_id")
 
 	schema, err := h.service.GetLatestSchema(c.Request.Context(), projectID)
 	if err != nil {
@@ -139,7 +144,7 @@ func (h *ProjectSchemaHandler) GetLatestSchema(c *gin.Context) {
 
 // GetAppliedSchema GET /api/v1/projects/:project_id/schemas/applied
 func (h *ProjectSchemaHandler) GetAppliedSchema(c *gin.Context) {
-	projectID := c.Param("project_id")
+	projectID := c.Query("project_id")
 
 	schema, err := h.service.GetAppliedSchema(c.Request.Context(), projectID)
 	if err != nil {
@@ -148,6 +153,76 @@ func (h *ProjectSchemaHandler) GetAppliedSchema(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, schema)
+}
+
+// GetProjectSchemaVersions GET /api/v1/projects/:project_id/schemas/versions
+func (h *ProjectSchemaHandler) GetProjectSchemaVersions(c *gin.Context) {
+	projectID := c.Query("project_id")
+	if projectID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "project_id query param is required"})
+		return
+	}
+
+	versions, err := h.service.GetProjectSchemaVersions(c.Request.Context(), projectID)
+	if err != nil {
+		h.handleError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"project_id": projectID, "versions": versions})
+}
+
+// GetPendingSchema GET /api/v1/projects/:project_id/schemas/pending
+func (h *ProjectSchemaHandler) GetPendingSchema(c *gin.Context) {
+	projectID := c.Query("project_id")
+	if projectID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "project_id query param is required"})
+		return
+	}
+
+	schema, err := h.service.GetPendingSchema(c.Request.Context(), projectID)
+	if err != nil {
+		h.handleError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, schema)
+}
+
+// SetApplying PUT /api/v1/schemas/:id/applying
+func (h *ProjectSchemaHandler) SetApplying(c *gin.Context) {
+	id := c.Param("id")
+
+	if err := h.service.SetApplying(c.Request.Context(), id); err != nil {
+		h.handleError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "schema marked as applying"})
+}
+
+// UpdateSchemaStateRequest represents the request body for updating schema state
+type UpdateSchemaStateRequest struct {
+	State        string  `json:"state" binding:"required"`
+	ErrorMessage *string `json:"error_message"`
+}
+
+// UpdateSchemaState PUT /api/v1/schemas/:id/state
+func (h *ProjectSchemaHandler) UpdateSchemaState(c *gin.Context) {
+	id := c.Param("id")
+
+	var req UpdateSchemaStateRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err := h.service.UpdateSchemaState(c.Request.Context(), id, req.State, req.ErrorMessage); err != nil {
+		h.handleError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "schema state updated", "state": req.State})
 }
 
 // handleError maps service sentinel errors to HTTP status codes.
