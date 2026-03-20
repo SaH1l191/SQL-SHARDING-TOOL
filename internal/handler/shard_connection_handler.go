@@ -2,10 +2,10 @@ package handler
 
 import (
 	"errors"
+	"github.com/gin-gonic/gin"
 	"net/http"
 	"sqlsharder/internal/service"
 	"sqlsharder/pkg/logger"
-	"github.com/gin-gonic/gin"
 )
 
 type ShardConnectionHandler struct {
@@ -48,7 +48,7 @@ func (h *ShardConnectionHandler) GetShardConnection(c *gin.Context) {
 
 func (h *ShardConnectionHandler) UpdateShardConnection(c *gin.Context) {
 	shardID := c.Param("id")
-	
+
 	var req service.UpdateShardConnectionRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		logger.Logger.Error("Invalid input", "error", err)

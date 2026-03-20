@@ -25,7 +25,7 @@ func (h *ShardHandler) CreateShard(c *gin.Context) {
 		return
 	}
 
-	shard, err := h.service.CreateShard(c.Request.Context(),&req)
+	shard, err := h.service.CreateShard(c.Request.Context(), &req)
 	if err != nil {
 		logger.Logger.Error("Failed to create shard", "error", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create shard: " + err.Error()})

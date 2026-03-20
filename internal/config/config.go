@@ -20,4 +20,5 @@ type ApplicationDatabaseConn struct {
 }
 
 var ApplicationDatabaseConnection ApplicationDatabaseConn
+
 //will be instantiated in main.go

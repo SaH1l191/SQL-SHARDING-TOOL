@@ -18,14 +18,15 @@ type ShardConnection struct {
 type ShardConnectionRepository struct {
 	db *sql.DB
 }
+
 func NewShardConnectionRepository(db *sql.DB) *ShardConnectionRepository {
-	return &ShardConnectionRepository{db: db,}
+	return &ShardConnectionRepository{db: db}
 }
 
-func (r *ShardConnectionRepository) ConnectionCreate(ctx context.Context,sc *ShardConnection) error {
+func (r *ShardConnectionRepository) ConnectionCreate(ctx context.Context, sc *ShardConnection) error {
 	query := `INSERT INTO shard_connections (shard_id, host, port, database_name, username, password, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
 	_, err := r.db.ExecContext(ctx, query, sc.ShardId, sc.Host, sc.Port, sc.DatabaseName, sc.Username, sc.Password, sc.CreatedAt, sc.UpdatedAt)
-	
+
 	if err != nil {
 		return err
 	}
@@ -33,9 +34,9 @@ func (r *ShardConnectionRepository) ConnectionCreate(ctx context.Context,sc *Sha
 
 }
 
-func (r *ShardConnectionRepository) ConnectionRemove(ctx context.Context, shardId string) (error) {
+func (r *ShardConnectionRepository) ConnectionRemove(ctx context.Context, shardId string) error {
 	query := `DELETE FROM shard_connections where shard_id=$1`
-	_, err := r.db.ExecContext(ctx, query, shardId) 
+	_, err := r.db.ExecContext(ctx, query, shardId)
 	if err != nil {
 		return err
 	}
@@ -48,8 +49,8 @@ func (r *ShardConnectionRepository) GetConnectionByShardID(ctx context.Context, 
 	err := r.db.QueryRowContext(ctx, query, shardId).Scan(&sc.ShardId, &sc.Host, &sc.Port, &sc.DatabaseName, &sc.Username, &sc.Password, &sc.CreatedAt, &sc.UpdatedAt)
 	if err != nil {
 		return ShardConnection{}, err
-	} 
-	return sc, nil 
+	}
+	return sc, nil
 }
 
 func (c *ShardConnectionRepository) ConnectionUpdate(ctx context.Context, connInfo ShardConnection) error {
@@ -73,5 +74,3 @@ func (c *ShardConnectionRepository) ConnectionUpdate(ctx context.Context, connIn
 	return nil
 
 }
-
-

@@ -6,7 +6,7 @@ import (
 	"sqlsharder/internal/config"
 )
 
-//func for initial startup to check if DB exists, if not create it to prevent throwing 
+//func for initial startup to check if DB exists, if not create it to prevent throwing
 // errors when trying to connect to it
 func EnsureDatabaseExists() error {
 	sysConnStr := fmt.Sprintf(
@@ -16,18 +16,18 @@ func EnsureDatabaseExists() error {
 		config.AppDBCreds.DB_HOST,
 		config.AppDBCreds.DB_PORT,
 	)
-	sysDB, err := sql.Open("postgres",sysConnStr)
+	sysDB, err := sql.Open("postgres", sysConnStr)
 
 	if err != nil {
 		return fmt.Errorf("failed to connect to system database: %w", err)
 	}
-	
-	var exists bool 
+
+	var exists bool
 	err = sysDB.QueryRow("SELECT EXISTS(SELECT 1 FROM pg_database WHERE datname = $1)", config.AppDBCreds.DB_NAME).Scan(&exists)
 	if err != nil {
 		return fmt.Errorf("failed to check if database exists: %w", err)
 	}
-	
+
 	if !exists {
 		query := fmt.Sprintf("CREATE DATABASE %s", config.AppDBCreds.DB_NAME)
 		_, err = sysDB.Exec(query)
@@ -36,6 +36,6 @@ func EnsureDatabaseExists() error {
 		}
 	}
 
-	defer sysDB.Close() 
+	defer sysDB.Close()
 	return nil
 }

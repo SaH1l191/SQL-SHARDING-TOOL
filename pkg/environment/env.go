@@ -11,12 +11,11 @@ func LoadEnv() error {
 	err := godotenv.Load()
 	if err != nil {
 		return err
-	} 
+	}
 	return nil
 }
 
- 
-func LoadEnvVariables()  {
+func LoadEnvVariables() {
 	config.AppDBCreds.DB_HOST = os.Getenv("DB_HOST")
 	config.AppDBCreds.DB_PASSWORD = os.Getenv("DB_PASSWORD")
 	config.AppDBCreds.DB_NAME = os.Getenv("DB_NAME")

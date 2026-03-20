@@ -3,8 +3,8 @@ package db
 import (
 	"database/sql"
 	"fmt"
-	"sqlsharder/internal/config"
 	_ "github.com/lib/pq"
+	"sqlsharder/internal/config"
 	// blank import.
 )
 

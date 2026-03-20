@@ -13,14 +13,14 @@ import (
 )
 
 func ApplyMigrations(dsn string) error {
- 
+
 	wd, err := os.Getwd()
 	if err != nil {
 		return fmt.Errorf("failed to get working directory: %w", err)
 	}
- 
+
 	migrationsPath := filepath.Join(wd, "migrations")
- 
+
 	sourceURL := "file://" + filepath.ToSlash(migrationsPath)
 
 	fmt.Println("Working directory:", wd)

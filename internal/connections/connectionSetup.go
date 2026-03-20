@@ -2,10 +2,9 @@ package connections
 
 import (
 	"context"
-	"database/sql" 
+	"database/sql"
 	"time"
 )
- 
 
 func newConnectionSetup(ctx context.Context, connString string) (*sql.DB, error) {
 	db, err := sql.Open("mysql", connString)

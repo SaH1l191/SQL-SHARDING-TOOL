@@ -1,20 +1,19 @@
 package loader
 
-import ( 
+import (
 	"database/sql"
 	"sqlsharder/internal/db"
-	"sqlsharder/pkg/logger"
 	"sqlsharder/pkg/environment"
+	"sqlsharder/pkg/logger"
 )
 
 // sequencing file
 //loading service in order
 
-
-func Loadservices() error { 
+func Loadservices() error {
 	err := environment.LoadEnv()
 	if err != nil {
-		logger.Logger.Error("Failed to load environment","error", err)
+		logger.Logger.Error("Failed to load environment", "error", err)
 		return err
 	}
 	environment.LoadEnvVariables()
@@ -31,14 +30,11 @@ func Loadservices() error {
 		logger.Logger.Error("Failed to apply migrations", "error", err)
 		return err
 	}
-	
-
 
 	logger.Logger.Info("Env Loaded & Database Created", "status", "success")
 
 	return nil
 }
-
 
 func LoadApplicationDatabase() (*sql.DB, error) {
 	db, err := db.LoadApplicationDatabase()

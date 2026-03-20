@@ -8,7 +8,7 @@ import (
 )
 
 type CreateShardRequest struct {
-	ProjectID        string `json:"project_id"`
+	ProjectID string `json:"project_id"`
 }
 
 type ShardService struct {
@@ -20,10 +20,9 @@ func NewShardService(repo *repository.ShardRepository) *ShardService {
 }
 
 var (
-	ErrShardNotFound     = errors.New("shard not found")
+	ErrShardNotFound      = errors.New("shard not found")
 	ErrShardDeleteBlocked = errors.New("shard delete blocked")
 )
-
 
 func (s *ShardService) CreateShard(ctx context.Context, req *CreateShardRequest) (*repository.Shard, error) {
 	if req.ProjectID == "" {

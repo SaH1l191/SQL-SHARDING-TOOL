@@ -43,7 +43,7 @@ func (m *ConnectionManager) CheckConnectionHealth(ctx context.Context, projectId
 	return true, nil
 }
 
-// func to initiate connections for all projects of all shards no startup 
+// func to initiate connections for all projects of all shards no startup
 func (m *ConnectionManager) InitiateConnectionsAll(ctx context.Context) error {
 	projects, err := m.projectRepo.ProjectList(ctx)
 	if err != nil {
@@ -54,7 +54,7 @@ func (m *ConnectionManager) InitiateConnectionsAll(ctx context.Context) error {
 		shards, err := m.shardRepo.ShardList(ctx, project.ID)
 		if err != nil {
 			logger.Logger.Warn("Failed to get shards for project", "project_id", project.ID, "error", err)
-			continue;
+			continue
 		}
 		for _, shard := range shards {
 			shdconnInfo, err := m.shardConnRepo.GetConnectionByShardID(ctx, shard.ID)
@@ -78,8 +78,8 @@ func (m *ConnectionManager) InitiateConnectionsAll(ctx context.Context) error {
 
 // func to initiate connections for a active project and shard
 func (m *ConnectionManager) InitiateActiveProjectShardConnections(ctx context.Context) error {
-	
-	activeProject,err := m.projectRepo.GetActiveProjectId(ctx)
+
+	activeProject, err := m.projectRepo.GetActiveProjectId(ctx)
 	if err != nil {
 		logger.Logger.Warn("Failed to get active project", "error", err)
 		return err
@@ -88,15 +88,15 @@ func (m *ConnectionManager) InitiateActiveProjectShardConnections(ctx context.Co
 		logger.Logger.Warn("No active project found")
 		return nil
 	}
-	shards , err := m.shardRepo.ShardList(ctx, activeProject)
+	shards, err := m.shardRepo.ShardList(ctx, activeProject)
 	if err != nil {
 		logger.Logger.Warn("Failed to get shards for project", "project_id", activeProject, "error", err)
 		return err
 	}
-	
-	for _,shard := range shards {
-		shdConnInfo ,err := m.shardConnRepo.GetConnectionByShardID(ctx,shard.ID)
-		if err != nil{
+
+	for _, shard := range shards {
+		shdConnInfo, err := m.shardConnRepo.GetConnectionByShardID(ctx, shard.ID)
+		if err != nil {
 			logger.Logger.Warn("Failed to get connection for shard", "shard_id", shard.ID, "error", err)
 			continue
 		}
@@ -109,7 +109,7 @@ func (m *ConnectionManager) InitiateActiveProjectShardConnections(ctx context.Co
 		}
 		m.store.Set(activeProject, shard.ID, db)
 	}
-	
+
 	logger.Logger.Info("Successfully initiated connection for active project and shards")
 	return nil
 }

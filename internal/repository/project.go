@@ -3,16 +3,16 @@ package repository
 import (
 	"context"
 	"database/sql"
-	"time"
 	"github.com/google/uuid"
+	"time"
 )
 
 type Project struct {
-	ID          string `json:"id"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	Status      string `json:"status"`
-	ShardCount  int    `json:"shard_count"`
+	ID          string    `json:"id"`
+	Name        string    `json:"name"`
+	Description string    `json:"description"`
+	Status      string    `json:"status"`
+	ShardCount  int       `json:"shard_count"`
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
 }
@@ -26,7 +26,7 @@ type ProjectRepository struct {
 }
 
 func NewProjectRepository(db *sql.DB) *ProjectRepository {
-	return &ProjectRepository{db: db} 
+	return &ProjectRepository{db: db}
 }
 
 func (r *ProjectRepository) ProjectAdd(ctx context.Context, name string, description string) (*Project, error) {
@@ -118,15 +118,15 @@ func (r *ProjectRepository) GetProjectById(ctx context.Context, id string) (Proj
 	return project, nil
 }
 
-func (r *ProjectRepository) GetActiveProjectId(ctx context.Context) (string,error){
-	query :=`SELECT id from projects WHERE status='active'`
-	row := r.db.QueryRowContext(ctx,query)
-	var projectId string 
+func (r *ProjectRepository) GetActiveProjectId(ctx context.Context) (string, error) {
+	query := `SELECT id from projects WHERE status='active'`
+	row := r.db.QueryRowContext(ctx, query)
+	var projectId string
 	err := row.Scan(&projectId)
 	if err != nil {
 		return "", err
 	}
-	// defer row.Close() doesnt return cursor as single row is queried not multiple rows 
+	// defer row.Close() doesnt return cursor as single row is queried not multiple rows
 	return projectId, nil
 }
 
