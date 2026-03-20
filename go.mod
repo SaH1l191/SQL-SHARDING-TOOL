@@ -8,6 +8,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/joho/godotenv v1.5.1
 	github.com/lib/pq v1.11.2
+	github.com/pganalyze/pg_query_go/v5 v5.1.0
 )
 
 require (

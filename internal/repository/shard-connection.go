@@ -24,7 +24,8 @@ func NewShardConnectionRepository(db *sql.DB) *ShardConnectionRepository {
 }
 
 func (r *ShardConnectionRepository) ConnectionCreate(ctx context.Context, sc *ShardConnection) error {
-	query := `INSERT INTO shard_connections (shard_id, host, port, database_name, username, password, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+	query := `INSERT INTO shard_connections (shard_id, host, port, database_name, username, password, created_at, updated_at) 
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`
 	_, err := r.db.ExecContext(ctx, query, sc.ShardId, sc.Host, sc.Port, sc.DatabaseName, sc.Username, sc.Password, sc.CreatedAt, sc.UpdatedAt)
 
 	if err != nil {
@@ -54,7 +55,8 @@ func (r *ShardConnectionRepository) GetConnectionByShardID(ctx context.Context, 
 }
 
 func (c *ShardConnectionRepository) ConnectionUpdate(ctx context.Context, connInfo ShardConnection) error {
-	query := `UPDATE shard_connections SET host = $1, port = $2, database_name = $3, username = $4, password = $5, updated_at = NOW() WHERE shard_id = $6`
+	query := `UPDATE shard_connections SET host = $1, port = $2, database_name = $3, username = $4, password = $5, updated_at = NOW() 
+	WHERE shard_id = $6`
 
 	_, err := c.db.ExecContext(
 		ctx,

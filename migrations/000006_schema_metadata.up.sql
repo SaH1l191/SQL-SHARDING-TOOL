@@ -57,13 +57,9 @@ CREATE INDEX idx_fk_edges_project_child
 CREATE TABLE table_shard_keys (
     project_id UUID NOT NULL,
     table_name TEXT NOT NULL,
-
     shard_key_column TEXT NOT NULL,
-
     is_manual_override BOOLEAN NOT NULL DEFAULT FALSE,
-
     updated_at TIMESTAMP NOT NULL DEFAULT now(),
-
     PRIMARY KEY (project_id, table_name)
 );
 
