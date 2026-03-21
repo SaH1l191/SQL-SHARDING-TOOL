@@ -100,11 +100,10 @@ func (p *ProjectSchemaRepository) CreateProjectSchemaDraft(
 //	Example: fix typo in draft query before committing.
 func (p *ProjectSchemaRepository) ProjectSchemaUpdateDraft(ctx context.Context, schemaID string, ddlSQL string) error {
 
-	query := `
-		UPDATE project_schemas
+	query :=
+		`UPDATE project_schemas
 		SET ddl_sql = $1
-		WHERE id = $2 AND state = 'draft'
-	`
+		WHERE id = $2 AND state = 'draft'`
 
 	result, err := p.db.ExecContext(
 		ctx,

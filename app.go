@@ -11,6 +11,7 @@ import (
 	"sqlsharder/internal/loader"
 	"sqlsharder/internal/repository"
 	"sqlsharder/internal/router"
+	"sqlsharder/internal/schema"
 	"sqlsharder/internal/service"
 	"sqlsharder/pkg/logger"
 )
@@ -20,6 +21,8 @@ type App struct {
 	server      *http.Server
 	connStore   *connections.ConnectionStore
 	connManager *connections.ConnectionManager
+
+	schemaService *schema.SchemaService
 }
 
 func NewApp() *App {
@@ -77,12 +80,21 @@ func (a *App) buildServer() *http.Server {
 	shardConnService := service.NewShardConnectionService(shardConnRepo)
 	shardConnHandler := handler.NewShardConnectionHandler(shardConnService)
 
+	// shardKeyRepo := repository.NewShardKeysRepository(a.db)
+	// shardSchemaExecutionRepo := repository.NewSchemaExecutionStatusRepository(a.db)
+	fkEdgesRepo := repository.NewFKEdgesRepository(a.db)
+	columnsRepo := repository.NewColumnRepository(a.db)
+
 	a.connStore = connections.NewConnectionStore()
 	a.connManager = connections.NewConnectionManager(
 		a.connStore,
 		projectRepo,
 		shardRepo,
 		shardConnRepo,
+	)
+	a.schemaService = schema.NewSchemaService(
+		columnsRepo,
+		fkEdgesRepo,
 	)
 
 	r := router.New()

@@ -180,7 +180,7 @@ func (e *FKEdgesRepository) ReplaceFKEdgesForProject(
 	if err != nil {
 		return err
 	}
-	_ = tx.Rollback()
+	defer tx.Rollback()
 
 	deleteQuery := `DELETE FROM fk_edges WHERE project_id = $1`
 	_, err = tx.ExecContext(ctx, deleteQuery, projectID)

@@ -1,0 +1,94 @@
+
+existing query := 
+CREATE TABLE users (
+    id   UUID PRIMARY KEY,
+    name TEXT NOT NULL
+);
+
+
+new query input := 
+ALTER TABLE users ADD COLUMN email TEXT;
+
+CREATE TABLE orders (
+    id      UUID PRIMARY KEY,
+    user_id UUID NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
+```
+
+---
+
+## Step 1 — Parse new DDL → flat slices
+
+`ParseDDLToMetadata("proj-1", newDDL)` walks the AST and returns:
+```
+newCols = [
+    { ProjectID:"proj-1", TableName:"users",  ColumnName:"email",   DataType:"text", IsNullable:true,  IsPK:false }
+    { ProjectID:"proj-1", TableName:"orders", ColumnName:"id",      DataType:"uuid", IsNullable:false, IsPK:true  }
+    { ProjectID:"proj-1", TableName:"orders", ColumnName:"user_id", DataType:"uuid", IsNullable:false, IsPK:false }
+]
+
+newFKs = [
+    { ProjectId:"proj-1", ChildTable:"orders", ChildColumn:"user_id", ParentTable:"users", ParentColumn:"id" }
+]
+```
+
+Notice: `users.id` and `users.name` are **not** in `newCols` because the new DDL didn't mention them. This is the problem that would wipe them if you went straight to replace.
+
+---
+
+## Step 2 — Load existing from DB
+
+`GetColumnsByProjectId("proj-1")` returns what was saved from the previous run:
+```
+existingCols = [
+    { ProjectID:"proj-1", TableName:"users", ColumnName:"id",   DataType:"uuid", IsNullable:false, IsPK:true  }
+    { ProjectID:"proj-1", TableName:"users", ColumnName:"name", DataType:"text", IsNullable:false, IsPK:false }
+]
+
+existingFKs = []  (none existed before)
+```
+
+---
+
+## Step 3 — mergeColumns
+
+The function builds a `map[colKey]Column` where `colKey = {tableName, columnName}`.
+
+**First loop — seed with existing:**
+```
+map = {
+    {users, id}   → { id,   uuid, isPK:true  }
+    {users, name} → { name, text, isPK:false }
+}
+```
+
+**Second loop — overwrite/add with incoming:**
+```
+incoming[0]: {users, email}   → NEW key, added
+incoming[1]: {orders, id}     → NEW key, added  
+incoming[2]: {orders, user_id}→ NEW key, added
+```
+```
+map = {
+    {users,  id}      → { id,      uuid, isPK:true  }   ← preserved from existing
+    {users,  name}    → { name,    text, isPK:false }   ← preserved from existing
+    {users,  email}   → { email,   text, isPK:false }   ← added from new DDL
+    {orders, id}      → { id,      uuid, isPK:true  }   ← added from new DDL
+    {orders, user_id} → { user_id, uuid, isPK:false }   ← added from new DDL
+}
+```
+
+**Flatten map to slice:**
+```
+mergedCols = [id, name, email, id, user_id]  ← all 5 columns, nothing lost
+```
+
+---
+
+## What if the same column appears in both?
+
+Say the user resubmits `CREATE TABLE users (id UUID, name TEXT NOT NULL)` — `users.name` exists in both `existing` and `incoming`.
+```
+First loop seeds:   {users, name} → { name, text, IsNullable:false }
+Second loop writes: {users, name} → { name, text, IsNullable:false }  ← overwrites same key
