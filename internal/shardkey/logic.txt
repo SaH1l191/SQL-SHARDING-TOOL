@@ -1,0 +1,110 @@
+
+Deciding how your data should be distributed across shards
+
+Without shard keys:
+don’t know:
+- where to insert data 
+- where to read data 
+- how to avoid cross-shard joins 
+
+
+
+Example problem:
+SELECT * FROM orders WHERE user_id = 42;
+
+Which shard?
+shard 1? shard 2? shard 3? 
+
+So we need:
+table → shard key → routing rule
+
+To decide the best Shard key per table :- 
+Parse schema:
+columns table → structure
+fk_edges table → relationships
+
+From all possible candidate columns :
+
+Step1 : Filter out bad columns 
+
+Eliminate : 
+nullable columns → unreliable
+boolean → only 2 values → skew
+timestamps → sequential → hotspot
+
+Example:
+users:
+  id         (can be shard key)
+  email      (can be shard key)
+  created_at (not needed)
+
+Output:
+users → [id, email]
+
+Step2 : Importance of the remaining colums (how frequently they are used ) based on relationship
+A good shard key is:
+referenced by many tables
+
+Example:
+orders.user_id → users.id
+payments.user_id → users.id
+So:
+users.id has HIGH fanout
+
+Output:
+users.id:IncomingFKCount = 2
+
+rank the columns based on IncomingFKCount & take the highest one as shard key
+
++10 → referenced by FK
++20 → is FK child
++10 → is primary key
+-15 → text/varchar
+
+
+Concern : Related rows are stored on the SAME shard
+intentionally place it together.
+
+Example: 
+users
+  id = 42
+orders
+  user_id = 42
+
+If shard key design is:
+users  → id
+orders → user_id
+
+Then both use the same value (42)
+hash(42) % N → shard 2
+
+Result:
+
+Shard 2:
+  users row (id=42)
+  orders rows (user_id=42)
+
+They live together
+
+Necessary to prevent Time complexity of cross-shard join
+then System must:
+Query shard 2 → get user
+Query shard 5 → get orders
+Merge results
+
+Problems:
+network overhead
+slower queries
+complex execution
+poor scalability
+
+
+if shard key is not present : Scatter/Gather(brute force)
+Fallback :
+very slow
+high network cost
+doesn’t scale
+
+
+
+

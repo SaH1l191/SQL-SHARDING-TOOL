@@ -4,18 +4,21 @@ import (
 	"context"
 	"fmt"
 	"sqlsharder/internal/repository"
+	"sqlsharder/internal/shardkey"
 	"sqlsharder/pkg/logger"
 )
 
 type SchemaService struct {
-	columnRepo *repository.ColumnRepository
-	fkRepo     *repository.FKEdgesRepository
+	columnRepo       *repository.ColumnRepository
+	fkRepo           *repository.FKEdgesRepository
+	inferenceService *shardkey.InferenceService
 }
 
-func NewSchemaService(colRepo *repository.ColumnRepository, fkRepo *repository.FKEdgesRepository) *SchemaService {
+func NewSchemaService(colRepo *repository.ColumnRepository, fkRepo *repository.FKEdgesRepository, inferenceService *shardkey.InferenceService) *SchemaService {
 	return &SchemaService{
-		columnRepo: colRepo,
-		fkRepo:     fkRepo,
+		columnRepo:       colRepo,
+		fkRepo:           fkRepo,
+		inferenceService: inferenceService,
 	}
 }
 
@@ -70,6 +73,13 @@ func (s *SchemaService) ApplyDDL(ctx context.Context, projectId string, ddl stri
 		logger.Logger.Error("SchemaService.ApplyDDL: fk_edges replace failed", "error", err)
 		return fmt.Errorf("ApplyDDL replace fk_edges: %w", err)
 	}
+	
+	//shard-key-election process
+	if err := s.inferenceService.RunForProject(ctx,projectId); err !=nil {
+		logger.Logger.Error("SchemaService.ApplyDDL: inference failed", "error", err)
+		return fmt.Errorf("ApplyDDL inference: %w", err)
+	}
+	logger.Logger.Info("SchemaService.ApplyDDL: inference completed", "project_id", projectId)
 
 	return nil
 }

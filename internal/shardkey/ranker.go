@@ -1,0 +1,163 @@
+package shardkey
+
+import (
+	"fmt"
+	"sort"
+	"sqlsharder/internal/repository"
+	"strings"
+)
+
+// logic :
+// score =
+//     + importance (who depends on me?)
+//     + connectivity (how many tables?)
+//     + ownership (am I a FK?)
+//     + centrality (do I point to a root?)
+//     + stability (am I PK?)
+//     - bad distribution (text?)
+
+func RankCandidates(
+	candidates CandidateSet,
+	fanout map[ColumnReference]FanoutStats,
+	cols []repository.Column,
+	fks []repository.FkEdges,
+) []ShardKeyDecision {
+
+	// build lookup maps once — O(n) each, used O(1) per candidate
+	isFKChild := make(map[ColumnReference]bool)
+	for _, fk := range fks {
+		isFKChild[ColumnReference{fk.ChildTable, fk.ChildColumn}] = true
+	}
+
+	isPK := make(map[ColumnReference]bool)
+	for _, col := range cols {
+		if col.IsPK {
+			isPK[ColumnReference{col.TableName, col.ColumnName}] = true
+		}
+	}
+
+	colDataType := make(map[ColumnReference]string)
+	for _, col := range cols {
+		colDataType[ColumnReference{col.TableName, col.ColumnName}] = col.DataType
+	}
+
+	var decisions []ShardKeyDecision
+
+	for tableName, tableCandidates := range candidates {
+
+		// score every candidate in this table, collect into a slice
+		type scored struct {
+			col     ColumnReference
+			score   int
+			reasons []string
+		}
+		var ranked []scored
+
+		for _, ref := range tableCandidates {
+			score := 1 // baseline
+			var reasons []string
+			reasons = append(reasons, "baseline (+1)")
+
+			// incoming FK references — how many things depend on this column
+			f := fanout[ref]
+			if f.IncomingFkCount > 0 {
+				v := f.IncomingFkCount * 10
+				score += v
+				reasons = append(reasons, fmt.Sprintf("referenced by %d FK (%+d)", f.IncomingFkCount, v))
+			}
+
+			// distinct referencing tables
+			if f.ReferencingTableCount > 0 {
+				v := f.ReferencingTableCount * 5
+				score += v
+				reasons = append(reasons, fmt.Sprintf("across %d tables (%+d)", f.ReferencingTableCount, v))
+			}
+
+			// column is itself a FK child (ownership / co-location signal)
+			if isFKChild[ref] {
+				score += 20
+				reasons = append(reasons, "FK child column (+20)")
+
+				// rootAffinityBonus: if the parent this column points to is
+				// itself highly referenced, co-locating here is even better
+				if bonus := rootAffinityBonus(ref, fks, fanout); bonus > 0 {
+					score += bonus
+					reasons = append(reasons, fmt.Sprintf("points to root table (%+d)", bonus))
+				}
+			}
+
+			// primary key
+			if isPK[ref] {
+				score += 10
+				reasons = append(reasons, "primary key (+10)")
+			}
+
+			// text/varchar columns have poor hash distribution — penalise
+			// Strings hash poorly
+			// Can cause uneven distribution
+			dt := strings.ToLower(colDataType[ref])
+			if dt == "text" || dt == "varchar" || strings.HasPrefix(dt, "varchar") {
+				score -= 15
+				reasons = append(reasons, "text column (-15)")
+			}
+
+			ranked = append(ranked, scored{ref, score, reasons})
+		}
+
+		// FIX: sort all candidates so the winner is always ranked[0].
+		// Without this, equal-score columns produce different results on
+		// every run because Go map iteration order is random.
+		sort.SliceStable(ranked, func(i, j int) bool {
+			if ranked[i].score != ranked[j].score {
+				return ranked[i].score > ranked[j].score // highest score first
+			}
+			// deterministic tie-break: alphabetical by table then column name
+			if ranked[i].col.TableName != ranked[j].col.TableName {
+				return ranked[i].col.TableName < ranked[j].col.TableName
+			}
+			return ranked[i].col.ColumnName < ranked[j].col.ColumnName
+		})
+
+		//guard to ensure 0 index exists !
+		if len(ranked) > 0 {
+			best := ranked[0]
+			decisions = append(decisions, ShardKeyDecision{
+				Table:   tableName,
+				Column:  best.col,
+				Score:   best.score,
+				Reasons: best.reasons,
+			})
+		}
+	}
+
+	return decisions
+}
+
+// rootAffinityBonus checks if the column is a FK pointing to a "root table"
+// (a table that many other tables reference). If so, sharding by this column
+// keeps related rows from orders, payments, reviews etc. on the same shard.
+//
+// Example:
+//
+//	orders.user_id → users.id
+//	users.id is referenced by 3 tables (orders, payments, reviews)
+//	→ bonus = 3 * 5 = +15
+//	→ total for orders.user_id: +20 (FK child) + +15 (root affinity) = +35
+func rootAffinityBonus(
+	ref ColumnReference,
+	fks []repository.FkEdges,
+	fanout map[ColumnReference]FanoutStats,
+) int {
+	for _, fk := range fks {
+		// find the FK edge where ref is the child column
+		if fk.ChildTable != ref.TableName || fk.ChildColumn != ref.ColumnName {
+			continue
+		}
+		// check how many things reference the parent column
+		parent := ColumnReference{TableName: fk.ParentTable, ColumnName: fk.ParentColumn}
+		if stats, ok := fanout[parent]; ok && stats.IncomingFkCount > 0 {
+			return stats.IncomingFkCount * 5
+		}
+	}
+	return 0
+}

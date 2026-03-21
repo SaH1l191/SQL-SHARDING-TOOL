@@ -57,7 +57,7 @@ func (e *FKEdgesRepository) GetEdgesByProjectID(
 		}
 		result = append(result, temp)
 	}
-	return result, nil
+	return result, rows.Err()
 }
 
 func (e *FKEdgesRepository) GetEdgesByChildTable(
@@ -95,7 +95,7 @@ func (e *FKEdgesRepository) GetEdgesByChildTable(
 		}
 		result = append(result, temp)
 	}
-	return result, nil
+	return result, rows.Err()
 }
 
 func (e *FKEdgesRepository) GetEdgesByParentTable(
@@ -134,7 +134,7 @@ func (e *FKEdgesRepository) GetEdgesByParentTable(
 		}
 		result = append(result, temp)
 	}
-	return result, nil
+	return result, rows.Err()
 }
 
 //process : Deletes old FK relationships and inserts newly computed ones.

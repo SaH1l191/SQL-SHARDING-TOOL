@@ -1,3 +1,7 @@
 .env
 tmp/
 sqlsharder.exe
+/bin/
+/dist/
+*.exe
+*.out
