@@ -24,8 +24,6 @@ import (
 // ReplaceExistingColumns()
 // ReplaceFKEdgesForProject()
 
-
-
 //for alter statements Flow :
 
 //existing []Column (from DB)
@@ -35,8 +33,6 @@ import (
 // merge by (tableName, columnName) key
 //     ↓
 // ReplaceExistingColumns with merged result
-
-
 
 // ParseDDLToMetadata parses raw DDL text and returns flat slices of
 // repository.Column and repository.FkEdges ready to be saved to the DB.
@@ -66,7 +62,7 @@ func ParseDDLToMetadata(projectId string, ddl string) ([]repository.Column, []re
 			continue
 		}
 	}
-	logger.Logger.Info("Extracted %d columns and %d foreign keys", len(columns), len(fkEdges))
+	logger.Logger.Info("extracted ddl metadata", "columns", len(columns), "foreign_keys", len(fkEdges))
 	return columns, fkEdges, nil
 }
 
@@ -102,7 +98,7 @@ func extractFromCreateTable(projectId string, stmt *pg_query.CreateStmt) ([]repo
 			}
 		}
 	}
-	logger.Logger.Info("Extracted %d columns and %d foreign keys from CREATE TABLE", len(cols), len(fks))
+	logger.Logger.Info("extracted create table", "table", tableName, "columns", len(cols), "foreign_keys", len(fks))
 	return cols, fks
 }
 
@@ -129,7 +125,7 @@ func extractFromAlterTable(projectId string, stmt *pg_query.AlterTableStmt) ([]r
 		}
 	}
 
-	logger.Logger.Info("Extracted %d columns and %d foreign keys from ALTER TABLE", len(cols), len(fks))
+	logger.Logger.Info("extracted alter table", "table", tableName, "columns", len(cols), "foreign_keys", len(fks))
 	return cols, fks
 }
 
@@ -148,7 +144,7 @@ func extractColumn(projectId, tableName string, colDef *pg_query.ColumnDef) repo
 			nullable = false // PKs are implicitly NOT NULL
 		}
 	}
-	logger.Logger.Info("Extracted column %s from table %s", colDef.Colname, tableName)
+	logger.Logger.Info("extracted column","table", tableName,"column", colDef.Colname)
 	return repository.Column{
 		ProjectID:  projectId,
 		TableName:  tableName,
@@ -174,7 +170,7 @@ func extractFKConstraint(projectId, tableName string, con *pg_query.Constraint) 
 			ParentColumn: getStringVal(con.PkAttrs[i]),
 		})
 	}
-	logger.Logger.Info("Extracted %d foreign key edges from constraint", len(result))
+	logger.Logger.Info("extracted fk constraint","table", tableName,"fk_edges", len(result))
 	return result
 }
 

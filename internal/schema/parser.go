@@ -1,14 +1,11 @@
 package schema
 
 import (
-	"fmt"
+	// "fmt"
 	pg_query "github.com/pganalyze/pg_query_go/v5"
 )
-
 func parseDDLStatement(sql string) (*pg_query.ParseResult, error) {
 	astTree, err := pg_query.Parse(sql)
-	json, _ := pg_query.ParseToJSON(sql)
-	fmt.Println(json)
 	if err != nil {
 		return nil, err
 	}

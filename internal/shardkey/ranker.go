@@ -9,13 +9,16 @@ import (
 
 // logic :
 // score =
-//     + importance (who depends on me?)
-//     + connectivity (how many tables?)
-//     + ownership (am I a FK?)
-//     + centrality (do I point to a root?)
-//     + stability (am I PK?)
-//     - bad distribution (text?)
-
+//   - importance (who depends on me?)
+//   - connectivity (how many tables?)
+//   - ownership (am I a FK?)
+//   - centrality (do I point to a root?)
+//   - stability (am I PK?)
+//   - bad distribution (text?)
+//
+// O(F + C)              // preprocessing
+// + O(K * F)            // scoring (dominant)
+// + O(K log K)          // sorting
 func RankCandidates(
 	candidates CandidateSet,
 	fanout map[ColumnReference]FanoutStats,
@@ -41,6 +44,12 @@ func RankCandidates(
 		colDataType[ColumnReference{col.TableName, col.ColumnName}] = col.DataType
 	}
 
+	//tableName : value is a slice of all FK edges for current table , not all tables 
+	fksByChildTable := make(map[string][]repository.FkEdges)
+	for _, fk := range fks {
+		fksByChildTable[fk.ChildTable] = append(fksByChildTable[fk.ChildTable], fk)
+	}
+
 	var decisions []ShardKeyDecision
 
 	for tableName, tableCandidates := range candidates {
@@ -52,6 +61,8 @@ func RankCandidates(
 			reasons []string
 		}
 		var ranked []scored
+
+		tableFks := fksByChildTable[tableName]
 
 		for _, ref := range tableCandidates {
 			score := 1 // baseline
@@ -80,7 +91,7 @@ func RankCandidates(
 
 				// rootAffinityBonus: if the parent this column points to is
 				// itself highly referenced, co-locating here is even better
-				if bonus := rootAffinityBonus(ref, fks, fanout); bonus > 0 {
+				if bonus := rootAffinityBonus(ref, tableFks, fanout); bonus > 0 {
 					score += bonus
 					reasons = append(reasons, fmt.Sprintf("points to root table (%+d)", bonus))
 				}
@@ -143,6 +154,8 @@ func RankCandidates(
 //	users.id is referenced by 3 tables (orders, payments, reviews)
 //	→ bonus = 3 * 5 = +15
 //	→ total for orders.user_id: +20 (FK child) + +15 (root affinity) = +35
+//
+// O(F)
 func rootAffinityBonus(
 	ref ColumnReference,
 	fks []repository.FkEdges,
