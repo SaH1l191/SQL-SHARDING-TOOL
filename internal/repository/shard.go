@@ -200,6 +200,24 @@ func (s *ShardRepository) FetchShardIndexes(ctx context.Context, projectID strin
 	}
 	return indexList, nil
 }
+
+func (s *ShardRepository) FetchShardProjectID(ctx context.Context, shardID string) (string, error) {
+	query := `SELECT project_id FROM shards WHERE id = $1`
+	rows := s.db.QueryRowContext(
+		ctx,
+		query,
+		shardID,
+	)
+	var projectID string
+	err := rows.Scan(&projectID)
+	if err != nil {
+		return "", err
+	}
+	return projectID, nil
+}
+
+
+
 func getIndex(arr []int) int {
 	if len(arr) == 0 {
 		return 0

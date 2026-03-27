@@ -33,11 +33,11 @@ func NewRing(shards []ShardTarget) (*Ring, error) {
 		shards: make(map[string]ShardTarget),
 	}
 	for i, s := range shards {
-		r.shards[s.ShardID] = s
+		r.shards[string(s.ShardID)] = s
 		for v := 0; v < virtualNodesPerShard; v++ {
 			r.vnodes = append(r.vnodes, virtualNode{
-				hash:    vNodeHash(s.ShardID, v),
-				shardID: s.ShardID,
+				hash:    vNodeHash(string(s.ShardID), v),
+				shardID: string(s.ShardID),
 				idx:     i,
 			})
 		}
@@ -67,6 +67,27 @@ func (r *Ring) LocateShard(hash HashValue) ShardTarget {
 		pos = 0
 	}
 	return r.shards[r.vnodes[pos].shardID]
+} 
+
+func (r *Ring) LocateShards(hashes []HashValue) []ShardTarget {
+	if len(hashes) == 0 {
+		return nil
+	}
+
+	seen := make(map[string]struct{})
+	result := make([]ShardTarget, 0, len(hashes))
+
+	for _, h := range hashes {
+		shard := r.LocateShard(h)
+		shardIDStr := string(shard.ShardID)
+		if _, ok := seen[shardIDStr]; ok {
+			continue
+		}
+		seen[shardIDStr] = struct{}{}
+		result = append(result, shard)
+	}
+
+	return result
 }
 
 func (r *Ring) Shards() []ShardTarget {

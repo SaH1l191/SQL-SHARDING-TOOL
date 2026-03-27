@@ -1,22 +1,37 @@
 package main
 
 import (
-	"context"
-	"os/signal"
-	"sqlsharder/pkg/logger"
-	"syscall"
+	"embed"
+
+	"github.com/wailsapp/wails/v2"
+	"github.com/wailsapp/wails/v2/pkg/options"
+	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
 )
 
+//go:embed all:frontend/dist
+var assets embed.FS
+ 
 func main() {
-	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
-	//listens for OS signals:
-	// SIGINT → usually sent when you press Ctrl+C
-	// SIGTERM → sent when the system asks your app to terminate (e.g., during shutdown, container stop)
-	// When any of those signals arrive, the returned ctx is automatically cancelled
-	defer stop()
+	
 
-	app := NewApp()
-	if err := app.Run(ctx); err != nil {
-		logger.Logger.Error("Application error", "error", err)
+	app := NewApp(DefaultWailsConfig())
+
+	err := wails.Run(&options.App{
+		Title:  app.wailsCfg.WindowTitle,
+		Width:  app.wailsCfg.WindowWidth,
+		Height: app.wailsCfg.WindowHeight,
+		AssetServer: &assetserver.Options{
+			Assets: assets,
+		},
+		BackgroundColour: &options.RGBA{R: 27, G: 38, B: 54, A: 1},
+		OnStartup:        app.startup,
+		OnShutdown:       app.shutdown,
+		Bind: []interface{}{
+			app,
+		},
+	})
+
+	if err != nil {
+		println("Error:", err.Error())
 	}
 }
