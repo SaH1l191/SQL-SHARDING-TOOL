@@ -16,7 +16,7 @@ func Loadservices() error {
 		logger.Logger.Error("Failed to load environment", "error", err)
 		return err
 	}
-	environment.LoadEnvVariables()
+	environment.LoadEnvVariables()//appConfigDbDetails set 
 
 	err = db.EnsureDatabaseExists()
 	if err != nil {

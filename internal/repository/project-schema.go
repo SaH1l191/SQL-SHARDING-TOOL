@@ -192,6 +192,7 @@ func (p *ProjectSchemaRepository) ProjectSchemaSetApplying(ctx context.Context, 
 
 // Updates state + error (like applied/failed).
 // Example: shard fails → set state failed + error msg.
+// applied / failed / rolled_back, with optional error message.
 func (p *ProjectSchemaRepository) ProjectSchemaUpdateSchemaState(
 	ctx context.Context,
 	schemaID string,

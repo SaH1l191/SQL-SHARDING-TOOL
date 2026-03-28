@@ -4,10 +4,10 @@ import { ProjectsPage } from './pages/ProjectsPage'
 import { ShardsPage } from './pages/ShardsPage'
 import { SchemaPage } from './pages/SchemaPage'
 import { QueryPage } from './pages/QueryPage'
+import { Terminal } from './components/Terminal'
 import { useProjectStore } from './stores/projectStore'
 import { useAppStore } from './stores/appStore'
 import { useProjectActions } from './hooks/useProjectActions'
-import { Notifications } from './components/Notifications'
 import type { Project } from './types'
 
 export default function App() {
@@ -92,7 +92,7 @@ export default function App() {
         )}
       </main>
 
-      <Notifications />
+      <Terminal />
     </div>
   )
 }

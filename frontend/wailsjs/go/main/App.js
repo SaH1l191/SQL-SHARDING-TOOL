@@ -10,6 +10,14 @@ export function ActivateShard(arg1) {
   return window['go']['main']['App']['ActivateShard'](arg1);
 }
 
+export function AddConnection(arg1) {
+  return window['go']['main']['App']['AddConnection'](arg1);
+}
+
+export function AddShard(arg1) {
+  return window['go']['main']['App']['AddShard'](arg1);
+}
+
 export function ApplyDDL(arg1, arg2) {
   return window['go']['main']['App']['ApplyDDL'](arg1, arg2);
 }
@@ -26,12 +34,20 @@ export function CreateSchemaDraft(arg1, arg2) {
   return window['go']['main']['App']['CreateSchemaDraft'](arg1, arg2);
 }
 
-export function CreateShard(arg1) {
-  return window['go']['main']['App']['CreateShard'](arg1);
-}
-
 export function DeactivateShard(arg1) {
   return window['go']['main']['App']['DeactivateShard'](arg1);
+}
+
+export function Deactivateproject(arg1) {
+  return window['go']['main']['App']['Deactivateproject'](arg1);
+}
+
+export function DeleteAllShards(arg1) {
+  return window['go']['main']['App']['DeleteAllShards'](arg1);
+}
+
+export function DeleteConnection(arg1) {
+  return window['go']['main']['App']['DeleteConnection'](arg1);
 }
 
 export function DeleteProject(arg1) {
@@ -46,16 +62,36 @@ export function DeleteShard(arg1) {
   return window['go']['main']['App']['DeleteShard'](arg1);
 }
 
-export function ExecuteProjectSchema(arg1) {
-  return window['go']['main']['App']['ExecuteProjectSchema'](arg1);
-}
-
 export function ExecuteSQL(arg1, arg2) {
   return window['go']['main']['App']['ExecuteSQL'](arg1, arg2);
 }
 
+export function FetchConnectionInfo(arg1) {
+  return window['go']['main']['App']['FetchConnectionInfo'](arg1);
+}
+
+export function FetchProjectStatus(arg1) {
+  return window['go']['main']['App']['FetchProjectStatus'](arg1);
+}
+
+export function FetchShardKeys(arg1) {
+  return window['go']['main']['App']['FetchShardKeys'](arg1);
+}
+
+export function GetCurrentSchema(arg1) {
+  return window['go']['main']['App']['GetCurrentSchema'](arg1);
+}
+
 export function GetFailedShardExecutions(arg1) {
   return window['go']['main']['App']['GetFailedShardExecutions'](arg1);
+}
+
+export function GetProjectById(arg1) {
+  return window['go']['main']['App']['GetProjectById'](arg1);
+}
+
+export function GetProjectSchemaStatus(arg1) {
+  return window['go']['main']['App']['GetProjectSchemaStatus'](arg1);
 }
 
 export function GetProjects() {
@@ -70,12 +106,8 @@ export function GetSchemaHistory(arg1) {
   return window['go']['main']['App']['GetSchemaHistory'](arg1);
 }
 
-export function GetShardConnection(arg1) {
-  return window['go']['main']['App']['GetShardConnection'](arg1);
-}
-
-export function GetShardKeys(arg1) {
-  return window['go']['main']['App']['GetShardKeys'](arg1);
+export function GetShardStatus(arg1) {
+  return window['go']['main']['App']['GetShardStatus'](arg1);
 }
 
 export function GetShards(arg1) {
@@ -86,8 +118,8 @@ export function GetWailsConfig() {
   return window['go']['main']['App']['GetWailsConfig']();
 }
 
-export function Greet(arg1) {
-  return window['go']['main']['App']['Greet'](arg1);
+export function MonitorShards(arg1) {
+  return window['go']['main']['App']['MonitorShards'](arg1);
 }
 
 export function RecomputeKeys(arg1) {
@@ -98,14 +130,14 @@ export function ReplaceShardKeys(arg1, arg2) {
   return window['go']['main']['App']['ReplaceShardKeys'](arg1, arg2);
 }
 
-export function RetrySchemaExecution(arg1) {
-  return window['go']['main']['App']['RetrySchemaExecution'](arg1);
+export function RetryShardConnections(arg1) {
+  return window['go']['main']['App']['RetryShardConnections'](arg1);
 }
 
-export function UpdateSchemaDraft(arg1, arg2, arg3) {
-  return window['go']['main']['App']['UpdateSchemaDraft'](arg1, arg2, arg3);
+export function UpdateConnection(arg1) {
+  return window['go']['main']['App']['UpdateConnection'](arg1);
 }
 
-export function UpdateShardConnection(arg1) {
-  return window['go']['main']['App']['UpdateShardConnection'](arg1);
+export function UpdateProjectSchemaDraft(arg1, arg2, arg3) {
+  return window['go']['main']['App']['UpdateProjectSchemaDraft'](arg1, arg2, arg3);
 }

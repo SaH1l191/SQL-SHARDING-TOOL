@@ -45,10 +45,10 @@ export const useAppStore = create<AppState>()(
           notifications: [...state.notifications, { ...notification, id, timestamp }]
         }))
         
-        // Auto-remove notification after 5 seconds
+        // Auto-remove notification after 3 seconds (shorter since terminal shows details)
         setTimeout(() => {
           get().removeNotification(id)
-        }, 5000)
+        }, 3000)
       },
       
       removeNotification: (id) => set((state) => ({

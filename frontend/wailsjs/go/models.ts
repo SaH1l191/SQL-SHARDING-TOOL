@@ -1,3 +1,28 @@
+export namespace executor {
+	
+	export class ExecutionResult {
+	    ShardID: string;
+	    Columns: string[];
+	    Rows: any[][];
+	    RowsAffected: number;
+	    Err: any;
+	
+	    static createFrom(source: any = {}) {
+	        return new ExecutionResult(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.ShardID = source["ShardID"];
+	        this.Columns = source["Columns"];
+	        this.Rows = source["Rows"];
+	        this.RowsAffected = source["RowsAffected"];
+	        this.Err = source["Err"];
+	    }
+	}
+
+}
+
 export namespace main {
 	
 	export class WailsConfig {

@@ -1,7 +1,16 @@
 import { useCallback } from 'react'
 import { useShardStore } from '../stores/shardStore'
 import { useAppStore } from '../stores/appStore'
-import { GetShards, CreateShard, DeleteShard, ActivateShard, DeactivateShard, GetShardConnection, UpdateShardConnection } from '../../wailsjs/go/main/App'
+import { 
+  GetShards, 
+  CreateShard, 
+  DeleteShard, 
+  ActivateShard, 
+  DeactivateShard,
+  FetchConnectionInfo,
+  UpdateConnection,
+  AddConnection
+} from '../../wailsjs/go/main/App'
 
 export function useShardActions() {
   const { 
@@ -22,8 +31,8 @@ export function useShardActions() {
     setLoading(true)
     clearError()
     try {
-      const shards = await (GetShards as unknown as (id: string) => Promise<any[]>)(projectId)
-      setShards(shards || [])
+      const shards = await GetShards(projectId)
+      setShards((shards || []) as any[])
     } catch (error) {
       const errorMessage = String(error)
       setError(errorMessage)
@@ -40,8 +49,8 @@ export function useShardActions() {
     setLoading(true)
     clearError()
     try {
-      const shard = await (CreateShard as unknown as (id: string) => Promise<any>)(projectId)
-      addShard(shard)
+      const shard = await CreateShard(projectId)
+      addShard(shard as any)
       addNotification({
         type: 'success',
         message: 'Shard created successfully'
@@ -64,7 +73,7 @@ export function useShardActions() {
     setLoading(true)
     clearError()
     try {
-      await (DeleteShard as unknown as (id: string) => Promise<void>)(shardId)
+      await DeleteShard(shardId)
       removeShard(shardId)
       addNotification({
         type: 'success',
@@ -87,7 +96,7 @@ export function useShardActions() {
     setLoading(true)
     clearError()
     try {
-      await (ActivateShard as unknown as (id: string) => Promise<void>)(shardId)
+      await ActivateShard(shardId)
       updateShard(shardId, { status: 'active' })
       addNotification({
         type: 'success',
@@ -110,7 +119,7 @@ export function useShardActions() {
     setLoading(true)
     clearError()
     try {
-      await (DeactivateShard as unknown as (id: string) => Promise<void>)(shardId)
+      await DeactivateShard(shardId)
       updateShard(shardId, { status: 'inactive' })
       addNotification({
         type: 'success',
@@ -132,11 +141,16 @@ export function useShardActions() {
   const fetchShardConnection = useCallback(async (shardId: string) => {
     clearError()
     try {
-      const connection = await (GetShardConnection as unknown as (id: string) => Promise<any>)(shardId)
-      setConnection(shardId, connection)
+      const connection = await FetchConnectionInfo(shardId)
+      setConnection(shardId, connection as any)
       return connection
     } catch (error) {
+      // Don't treat "no connection found" as an error for the UI
       const errorMessage = String(error)
+      if (errorMessage.includes('not found') || errorMessage.includes('no rows')) {
+        // This is expected when no connection exists yet
+        return null
+      }
       setError(errorMessage)
       addNotification({
         type: 'error',
@@ -150,12 +164,31 @@ export function useShardActions() {
     setLoading(true)
     clearError()
     try {
-      await (UpdateShardConnection as unknown as (conn: any) => Promise<void>)(connection)
+      // Check if connection already exists by trying to fetch it
+      let existingConnection = null
+      try {
+        existingConnection = await FetchConnectionInfo(connection.shard_id)
+      } catch {
+        // No existing connection, that's fine
+      }
+      
+      if (existingConnection && existingConnection.shard_id) {
+        // Update existing connection
+        await UpdateConnection(connection)
+        addNotification({
+          type: 'success',
+          message: 'Shard connection updated successfully'
+        })
+      } else {
+        // Create new connection
+        await AddConnection(connection)
+        addNotification({
+          type: 'success',
+          message: 'Shard connection created successfully'
+        })
+      }
+      
       updateConnection(connection.shard_id, connection)
-      addNotification({
-        type: 'success',
-        message: 'Shard connection updated successfully'
-      })
     } catch (error) {
       const errorMessage = String(error)
       setError(errorMessage)

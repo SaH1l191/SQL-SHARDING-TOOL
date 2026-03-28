@@ -95,3 +95,4 @@ func executeOnShard(ctx context.Context, db *sql.DB, shardID, sqlText string) Ex
 	affected, _ := res.RowsAffected()
 	return ExecutionResult{ShardID: shardID, RowsAffected: affected}
 }
+

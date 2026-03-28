@@ -56,14 +56,18 @@ export function ShardsPage({ project, onNoProject }: Props) {
     setConnTarget(shardId)
     // Pre-populate form with existing connection if available
     try {
-      const conn: ShardConnection = await fetchShardConnection(shardId)
-      setForm({
-        host: conn.host || 'localhost',
-        port: String(conn.port || 5432),
-        database_name: conn.database_name || '',
-        username: conn.username || 'postgres',
-        password: conn.password || '',
-      })
+      const conn: ShardConnection | null = await fetchShardConnection(shardId)
+      if (conn) {
+        setForm({
+          host: conn.host || 'localhost',
+          port: String(conn.port || 5432),
+          database_name: conn.database_name || '',
+          username: conn.username || 'postgres',
+          password: conn.password || '',
+        })
+      } else {
+        setForm(DEFAULT_FORM)
+      }
     } catch {
       setForm(DEFAULT_FORM)
     }
@@ -97,8 +101,6 @@ export function ShardsPage({ project, onNoProject }: Props) {
         database_name: form.database_name,
         username: form.username,
         password: form.password,
-        created_at: '',
-        updated_at: '',
       })
       setConnTarget(null)
     } finally {

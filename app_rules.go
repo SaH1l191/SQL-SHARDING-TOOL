@@ -139,6 +139,9 @@ func (a *App) checkIfOnlyDDL(ddlSQL string) bool {
 	return true
 }
 
+func (a *App) checkShardHealth(ctx context.Context, projectID string, shardID string) (bool, error) {
+	return a.connManager.CheckConnectionHealth(ctx, projectID, shardID)
+}
 
 // checkAllShards pings every shard of the active project and deactivates any
 // that fail. Designed to be called from a background goroutine / ticker.

@@ -3,8 +3,8 @@ package repository
 import (
 	"context"
 	"database/sql"
-	"github.com/google/uuid"
 	"time"
+	"github.com/google/uuid"
 )
 
 type Project struct {

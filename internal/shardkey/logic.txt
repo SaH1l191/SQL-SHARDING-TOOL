@@ -108,3 +108,7 @@ doesn’t scale
 
 
 
+ExtractCandidates(s)	For each table, identify which columns could potentially be a shard key. Usually numeric IDs, unique columns, or columns that are foreign keys.
+ComputeFanout(s, candidates)	Measure how “heavy” a table is in terms of data distribution and relationships — for example, if a column would cause skew in sharding.
+RankTableCandidates(tableName, localCandidates, fanout, s)	Assign a score to each candidate column based on criteria like uniqueness, relationships, and fanout. Higher score = better shard key.
+selectBestCandidate(tableName, ranked)	Choose the top-scoring column as the shard key for this table.
