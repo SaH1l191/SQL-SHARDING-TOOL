@@ -34,6 +34,10 @@ export function CreateSchemaDraft(arg1, arg2) {
   return window['go']['main']['App']['CreateSchemaDraft'](arg1, arg2);
 }
 
+export function CreateShard(arg1) {
+  return window['go']['main']['App']['CreateShard'](arg1);
+}
+
 export function DeactivateShard(arg1) {
   return window['go']['main']['App']['DeactivateShard'](arg1);
 }

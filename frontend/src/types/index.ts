@@ -27,4 +27,4 @@ export interface ShardConnection {
   updated_at: string
 }
 
-export type View = 'projects' | 'shards' | 'schema' | 'query'
+export type View = 'projects' | 'project-detail' | 'schema' | 'query'

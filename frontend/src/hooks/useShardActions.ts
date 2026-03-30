@@ -69,7 +69,7 @@ export function useShardActions() {
     }
   }, [addShard, setLoading, setError, clearError, addNotification])
 
-  const deleteShard = useCallback(async (shardId: string) => {
+  const deleteShard = useCallback(async (shardId: string, projectId?: string) => {
     setLoading(true)
     clearError()
     try {
@@ -86,11 +86,15 @@ export function useShardActions() {
         type: 'error',
         message: `Failed to delete shard: ${errorMessage}`
       })
+      // Re-fetch shards to ensure UI is in sync with backend
+      if (projectId) {
+        await fetchShards(projectId)
+      }
       throw error
     } finally {
       setLoading(false)
     }
-  }, [removeShard, setLoading, setError, clearError, addNotification])
+  }, [removeShard, fetchShards, setLoading, setError, clearError, addNotification])
 
   const activateShard = useCallback(async (shardId: string) => {
     setLoading(true)

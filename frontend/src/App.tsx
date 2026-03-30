@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { Sidebar } from './components/Sidebar'
 import { ProjectsPage } from './pages/ProjectsPage'
-import { ShardsPage } from './pages/ShardsPage'
+import { ProjectDetailPage } from './pages/ProjectDetailPage'
 import { SchemaPage } from './pages/SchemaPage'
 import { QueryPage } from './pages/QueryPage'
 import { Terminal } from './components/Terminal'
@@ -21,13 +21,19 @@ export default function App() {
 
   const handleSelectProject = (project: Project) => {
     setSelectedProject(project)
-    setCurrentView('shards')
+    setCurrentView('project-detail')
+  }
+
+  const handleBackToProjects = () => {
+    setSelectedProject(null)
+    setCurrentView('projects')
   }
 
   const handleCreate = async (name: string, description: string) => {
     try {
       const p = await createProject(name, description)
       setSelectedProject(p)
+      setCurrentView('project-detail')
     } catch (error) {
       // Error is handled by the hook
     }
@@ -72,22 +78,22 @@ export default function App() {
             onActivate={handleActivate}
           />
         )}
-        {currentView === 'shards' && (
-          <ShardsPage
+        {currentView === 'project-detail' && selectedProject && (
+          <ProjectDetailPage
             project={selectedProject}
-            onNoProject={() => setCurrentView('projects')}
+            onBack={handleBackToProjects}
           />
         )}
-        {currentView === 'schema' && (
+        {currentView === 'schema' && selectedProject && (
           <SchemaPage
             project={selectedProject}
-            onNoProject={() => setCurrentView('projects')}
+            onNoProject={handleBackToProjects}
           />
         )}
-        {currentView === 'query' && (
+        {currentView === 'query' && selectedProject && (
           <QueryPage
             project={selectedProject}
-            onNoProject={() => setCurrentView('projects')}
+            onNoProject={handleBackToProjects}
           />
         )}
       </main>

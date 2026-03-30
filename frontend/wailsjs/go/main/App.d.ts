@@ -21,6 +21,8 @@ export function CreateProject(arg1:string,arg2:string):Promise<repository.Projec
 
 export function CreateSchemaDraft(arg1:string,arg2:string):Promise<repository.ProjectSchema>;
 
+export function CreateShard(arg1:string):Promise<repository.Shard>;
+
 export function DeactivateShard(arg1:string):Promise<void>;
 
 export function Deactivateproject(arg1:string):Promise<void>;

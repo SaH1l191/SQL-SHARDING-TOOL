@@ -22,7 +22,6 @@ type ColumnReference struct {
 //         {Table: "orders", Column: "user_id"},
 //     ],
 // }
-
 //list of valid shard key [tableName]:[[tName,Colname],[tName,Colname]...] candidates after filtering
 type CandidateSet map[string][]ColumnReference
 

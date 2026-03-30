@@ -3,34 +3,27 @@ package schema
 import "sqlsharder/internal/repository"
 
 func FlattenColumn(schema *LogicalSchema) []repository.Column {
-
-	var result []repository.Column
-
+	var cols []repository.Column
 	for tableName, table := range schema.Tables {
 		for _, column := range table.Columns {
-
-			result = append(result, repository.Column{
-				ProjectID:    schema.ProjectId,
-				TableName:    tableName,
-				ColumnName:   column.Name,
-				DataType:     column.DataType,
-				IsNullable:   column.Nullable,
-				IsPK:         column.IsPk,
+			cols = append(cols, repository.Column{
+				ProjectID:  schema.ProjectId,
+				TableName:  tableName,
+				ColumnName: column.Name,
+				DataType:   column.DataType,
+				IsNullable: column.Nullable,
+				IsPK:       column.IsPk,
 			})
 		}
 	}
-
-	return result
+	return cols
 }
 
 func FlattenFKEdges(schema *LogicalSchema) []repository.FkEdges {
-
-	var result []repository.FkEdges
-
+	var fks []repository.FkEdges
 	for tableName, table := range schema.Tables {
 		for _, fk := range table.Fks {
-
-			result = append(result, repository.FkEdges{
+			fks = append(fks, repository.FkEdges{
 				ProjectId:    schema.ProjectId,
 				ParentTable:  fk.ParentTable,
 				ParentColumn: fk.ParentColumn,
@@ -39,6 +32,5 @@ func FlattenFKEdges(schema *LogicalSchema) []repository.FkEdges {
 			})
 		}
 	}
-
-	return result
+	return fks
 }

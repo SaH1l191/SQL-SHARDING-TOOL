@@ -1,0 +1,24 @@
+# Shard Connection Configuration
+# Use these details when configuring shards in the SQL-Sharding-Tool UI
+#
+# Instructions:
+# 1. Create a project in the UI
+# 2. Add shards (one per shard below)
+# 3. For each shard, click "Connection" and enter the corresponding details
+#
+# Generated for 2 shards
+
+# Shard 0
+Host: localhost
+Port: 5433
+Database: temp_db
+User: temp_user
+Password: temp_password
+
+# Shard 1
+Host: localhost
+Port: 5434
+Database: temp_db
+User: temp_user
+Password: temp_password
+

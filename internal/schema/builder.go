@@ -40,28 +40,21 @@ func MergeLogicalSchema(baseSchema *LogicalSchema, changes *LogicalSchema) (*Log
 	mergedSchema := cloneLogicalSchema(baseSchema) //immutability
 	//mergedSchema , changes => append changes to mergedSchema
 	for tableName, deltaTable := range changes.Tables {
-
 		baseTable, exists := mergedSchema.Tables[tableName]
 		if !exists {
 			mergedSchema.Tables[tableName] = cloneTable(deltaTable)
 			continue
 		}
-
 		mergedSchema.Tables[tableName] = mergeTable(baseTable, deltaTable)
 	}
-
 	return mergedSchema, nil
-
 }
 
 func FlattenLogicalSchema(schema *LogicalSchema) ([]repository.Column, []repository.FkEdges, error) {
-
 	if schema == nil {
 		return nil, nil, errors.New("nil columns or fk_edges")
 	}
-
 	columns := FlattenColumn(schema)
 	fkEdges := FlattenFKEdges(schema)
-
 	return columns, fkEdges, nil
 }

@@ -88,7 +88,6 @@ func (a *App) init() error {
 		"db", config.AppDBCreds.DB_NAME,
 		"port", config.AppDBCreds.DB_PORT,
 	)
-
 	a.buildRepos()
 
 	if err := a.connManager.InitiateConnectionsAll(a.ctx); err != nil {
@@ -126,7 +125,7 @@ func (a *App) buildRepos() {
 	a.emitter = logger.NewLogEmitter(a.ctx)
 	inferenceService := shardkey.NewInferenceService(columnsRepo, fkEdgesRepo, shardKeysRepo)
 	a.InferenceService = inferenceService
-	a.schemaService = schema.NewSchemaService(columnsRepo, fkEdgesRepo, inferenceService)
+	a.schemaService = schema.NewSchemaService(columnsRepo, fkEdgesRepo)
 	a.ExecutorService = executor.NewExecutor(a.connStore)
 	a.server = &http.Server{Addr: ":8080"}
 }
@@ -225,6 +224,11 @@ func (a *App) AddShard(projectId string) (*repository.Shard, error) {
 		"project_id": projectId,
 	})
 	return result, nil
+}
+
+// CreateShard is an alias for AddShard to maintain frontend compatibility
+func (a *App) CreateShard(projectId string) (*repository.Shard, error) {
+	return a.AddShard(projectId)
 }
 
 func (a *App) ActivateProject(projectId string) error {
@@ -377,12 +381,12 @@ func (a *App) DeleteShard(shardID string) (string, error) {
 		})
 		return "", err
 	}
-	if isInactive {
+	if !isInactive {
 		a.emitter.Error("Shard deletion failed", "application - DeleteShard", map[string]string{
 			"shard_id": shardID,
 			"error":    "cannot delete active shard",
 		})
-		return "CANNOT_DELETE_ACTIVE_SHARD", nil
+		return "", fmt.Errorf("cannot delete active shard")
 	}
 	err = a.DeleteConnection(shardID)
 	if err != nil {
@@ -410,17 +414,21 @@ func (a *App) DeleteShard(shardID string) (string, error) {
 	return "DELETED", nil
 }
 
-func (a *App) FetchConnectionInfo(shardID string) (repository.ShardConnection, error) {
+func (a *App) FetchConnectionInfo(shardID string) (*repository.ShardConnection, error) {
 	conn, err := a.ShardConnectionRepo.GetConnectionByShardID(a.ctx, shardID)
 	if err != nil {
-		logger.Logger.Error("Failed to fecth sahrd connection infomation", "shard_id", shardID, "error", err)
+		if err == sql.ErrNoRows {
+			// No connection configured yet - return nil without error
+			return nil, nil
+		}
+		logger.Logger.Error("Failed to fetch shard connection information", "shard_id", shardID, "error", err)
 		a.emitter.Error("Shard connection info fetching failed", "application - FetchConnectionInfo", map[string]string{
 			"shard_id": shardID,
 			"error":    err.Error(),
 		})
-		return repository.ShardConnection{}, err
+		return nil, err
 	}
-	return conn, nil
+	return &conn, nil
 }
 
 // Retry existing shard connections
@@ -548,6 +556,14 @@ func (a *App) DeactivateShard(shardID string) error {
 }
 
 func (a *App) AddConnection(connectionInfo *repository.ShardConnection) error {
+	// Set timestamps if not provided
+	if connectionInfo.CreatedAt == "" {
+		connectionInfo.CreatedAt = time.Now().Format(time.RFC3339)
+	}
+	if connectionInfo.UpdatedAt == "" {
+		connectionInfo.UpdatedAt = time.Now().Format(time.RFC3339)
+	}
+
 	err := a.ShardConnectionRepo.ConnectionCreate(a.ctx, connectionInfo)
 	if err != nil {
 		logger.Logger.Error("Failed to add shard connection details", "shard_id", connectionInfo.ShardId, "error", err)
@@ -1007,6 +1023,7 @@ func (a *App) ExecuteSQL(projectID string, sqlText string) ([]executor.Execution
 	}
 	return result, nil
 }
+//todo :- add schema execution methods & update frontend 
 
 //ExecuteProjectSchema
 //RetrySchemaExecution

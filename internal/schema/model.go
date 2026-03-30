@@ -33,3 +33,62 @@ func NewLogicalSchema() *LogicalSchema {
 		Tables: make(map[string]*Table),
 	}
 }
+
+//3 tables:
+// users
+// orders
+// payments
+
+// orders.user_id → users.id
+// payments.user_id → users.id
+// payments.order_id → orders.id
+
+// map[string]*Table{
+//     "users":   &Table{...},
+//     "orders":  &Table{...},
+//     "payments": &Table{...},
+// }
+
+// ordersTable := &Table{
+//     Columns: map[string]*Column{
+//         "id":      {Name: "id"},
+//         "user_id": {Name: "user_id"},
+//     },
+//     Fks: map[Fkkey]*Fk{
+//         {
+//             ChildColumn:  "user_id",
+//             ParentTable:  "users",
+//             ParentColumn: "id",
+//         }: {
+//             ChildTable:   "orders",
+//             ChildColumn:  "user_id",
+//             ParentTable:  "users",
+//             ParentColumn: "id",
+//         },
+//     },
+// }
+
+// paymentsTable := &Table{
+//     Fks: map[Fkkey]*Fk{
+//         {
+//             ChildColumn:  "user_id",
+//             ParentTable:  "users",
+//             ParentColumn: "id",
+//         }: {
+//             ChildTable:   "payments",
+//             ChildColumn:  "user_id",
+//             ParentTable:  "users",
+//             ParentColumn: "id",
+//         },
+//         {
+//             ChildColumn:  "order_id",
+//             ParentTable:  "orders",
+//             ParentColumn: "id",
+//         }: {
+//             ChildTable:   "payments",
+//             ChildColumn:  "order_id",
+//             ParentTable:  "orders",
+//             ParentColumn: "id",
+//         },
+//     },
+// }

@@ -318,7 +318,7 @@ export function Terminal() {
           </div>
           <div className="flex items-center gap-2">
             <button onClick={clearLogs} className="px-3 py-1 text-xs bg-gray-700 hover:bg-gray-600 text-gray-300 rounded transition-colors">Clear</button>
-            <button onClick={exportLogs} className="px-3 py-1 text-xs bg-gray-700 hover:bg-gray-600 text-gray-300 rounded transition-colors">Export</button>
+            {/* <button onClick={exportLogs} className="px-3 py-1 text-xs bg-gray-700 hover:bg-gray-600 text-gray-300 rounded transition-colors">Export</button> */}
             <button
               onClick={() => setIsVisible(false)}
               className="px-3 py-1 text-xs bg-gray-700 hover:bg-gray-600 text-gray-300 rounded transition-colors ease-in-out duration-100"
