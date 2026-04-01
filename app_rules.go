@@ -7,6 +7,15 @@ import (
 	"strings"
 )
 
+type SchemaCapabilities struct {
+	CanCreateDraft bool   `json:"can_create_draft"`
+	CanEditDraft   bool   `json:"can_edit_draft"`
+	CanCommit      bool   `json:"can_commit"`
+	CanExecute     bool   `json:"can_execute"`
+	CanRetry       bool   `json:"can_retry"`
+	Reason         string `json:"reason"`
+}
+
 func (a *App) checkAllProjectsInactive() (bool, error) {
 	projects, err := a.GetProjects()
 	if err != nil {
@@ -167,3 +176,4 @@ func (a *App) checkAllShards(ctx context.Context) {
 		}
 	}
 }
+

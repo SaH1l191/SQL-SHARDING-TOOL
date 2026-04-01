@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { StatusBadge } from '../components/StatusBadge'
 import { EmptyState } from '../components/EmptyState'
 import { Modal } from '../components/Modal'
+import { SchemaEditor } from '../components/SchemaEditor'
 import { useShardActions } from '../hooks/useShardActions'
 import { useProjectActions } from '../hooks/useProjectActions'
 import { useShardStore } from '../stores/shardStore'
@@ -307,12 +308,7 @@ export function ProjectDetailPage({ project, onBack }: Props) {
 
             {activeTab === 'schema' && (
               <div className="p-6">
-                <h2 className="text-lg font-semibold text-gray-100 mb-4">Schema</h2>
-                <EmptyState
-                  icon="📋"
-                  title="Schema Management"
-                  description="Schema management features will be available soon."
-                />
+                <SchemaEditor projectId={project.id} />
               </div>
             )}
           </>

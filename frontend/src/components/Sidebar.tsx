@@ -68,20 +68,6 @@ export function Sidebar({ projects, selectedProject, activeView, onSelectProject
                 </button>
                 
                 <button
-                  onClick={() => onViewChange('schema')}
-                  className={`w-full text-left rounded-md px-3 py-2 text-sm transition-colors ${
-                    activeView === 'schema'
-                      ? 'bg-gray-800 text-gray-100'
-                      : 'text-gray-400 hover:bg-gray-800/60 hover:text-gray-200'
-                      }`}
-                >
-                  <div className="flex items-center justify-between gap-1">
-                    <span>Schema</span>
-                    <span className="text-gray-600">⊞</span>
-                  </div>
-                </button>
-                
-                <button
                   onClick={() => onViewChange('query')}
                   className={`w-full text-left rounded-md px-3 py-2 text-sm transition-colors ${
                     activeView === 'query'

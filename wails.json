@@ -2,10 +2,10 @@
   "$schema": "https://wails.io/schemas/config.v2.json",
   "name": "sqlsharder",
   "outputfilename": "SQL-Sharding-Tool",
-  "frontend:install": "npm install",
+  "frontend:install": "pnpm install",
   "frontend:output": "frontend/dist",
-  "frontend:build": "npm run build",
-  "frontend:dev:watcher": "npm run dev",
+  "frontend:build": "pnpm run build",
+  "frontend:dev:watcher": "pnpm run dev",
   "frontend:dev:serverUrl": "http://localhost:5173",
   "author": {
     "name": "SaH1l191",

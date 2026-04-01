@@ -4,6 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type SchemaExecutionStatus struct {
@@ -11,7 +13,7 @@ type SchemaExecutionStatus struct {
 	SchemaId   string    `json:"schema_id"` //project_versions_schema_id
 	ShardId    string    `json:"shard_id"`
 	State      string    `json:"state"`
-	ErrMsg     string    `json:"err_msg"`
+	ErrMsg     string    `json:"error_message"`
 	ExecutedAt time.Time `json:"executed_at"`
 }
 
@@ -30,9 +32,9 @@ func (r *SchemaExecutionStatusRepository) CreateSchemaExecutionRecord(ctx contex
 	shdStatus SchemaExecutionStatus) error {
 
 	query := `INSERT INTO schema_execution_status 
-		(id, schema_id, shard_id, state, err_msg, executed_at) VALUES ($1, $2, $3, $4, $5, NOW())`
+		(id, schema_id, shard_id, state, error_message, executed_at) VALUES ($1, $2, $3, $4, $5, NOW())`
 
-	_, err := r.db.ExecContext(ctx, query, shdStatus.ID, shdStatus.SchemaId, shdStatus.ShardId, shdStatus.State, shdStatus.ErrMsg)
+	_, err := r.db.ExecContext(ctx, query, uuid.New().String(), shdStatus.SchemaId, shdStatus.ShardId, shdStatus.State, shdStatus.ErrMsg)
 	if err != nil {
 		return err
 	}
@@ -94,7 +96,7 @@ func (r *SchemaExecutionStatusRepository) ExecutionStatusFetchStatusByShardID(
 ) ([]SchemaExecutionStatus, error) {
 
 	query := `
-		SELECT id, schema_id, shard_id, state, error_messgae, executed_at
+		SELECT id, schema_id, shard_id, state, error_message, executed_at
 		FROM schema_execution_status
 		WHERE shard_id = $1`
 
@@ -180,7 +182,7 @@ func (r *SchemaExecutionStatusRepository) ExecutionShardResetState(
 	return nil
 }
 
-//fetches the failed schema execution statuses for a given schema by its project version schema ID
+// fetches the failed schema execution statuses for a given schema by its project version schema ID
 func (r *SchemaExecutionStatusRepository) ExecutionRecordsFetchStatusFailed(
 	ctx context.Context,
 	schemaID string,

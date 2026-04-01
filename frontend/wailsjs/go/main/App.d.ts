@@ -37,6 +37,8 @@ export function DeleteSchemaDraft(arg1:string):Promise<void>;
 
 export function DeleteShard(arg1:string):Promise<string>;
 
+export function ExecuteProjectSchema(arg1:string):Promise<void>;
+
 export function ExecuteSQL(arg1:string,arg2:string):Promise<Array<executor.ExecutionResult>>;
 
 export function FetchConnectionInfo(arg1:string):Promise<repository.ShardConnection>;
@@ -55,6 +57,8 @@ export function GetProjectSchemaStatus(arg1:string):Promise<string>;
 
 export function GetProjects():Promise<Array<repository.Project>>;
 
+export function GetSchemaCapabilities(arg1:string):Promise<main.SchemaCapabilities>;
+
 export function GetSchemaExecutionStatus(arg1:string):Promise<Array<repository.SchemaExecutionStatus>>;
 
 export function GetSchemaHistory(arg1:string):Promise<Array<repository.ProjectSchema>>;
@@ -70,6 +74,8 @@ export function MonitorShards(arg1:context.Context):Promise<void>;
 export function RecomputeKeys(arg1:string):Promise<void>;
 
 export function ReplaceShardKeys(arg1:string,arg2:Array<repository.ShardKeyRecord>):Promise<void>;
+
+export function RetrySchemaExecution(arg1:string):Promise<void>;
 
 export function RetryShardConnections(arg1:context.Context):Promise<void>;
 

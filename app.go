@@ -823,9 +823,13 @@ func (a *App) RetryShardConnections(ctx context.Context) error {
 func (a *App) execDDLonShard(projectID string, shardID string, ddl string) error {
 	db, err := a.connStore.Get(projectID, shardID)
 	if err != nil {
+		logger.Logger.Error("failed to get database connection", "project_id", projectID, "shard_id", shardID, "error", err)
 		return err
 	}
 	_, err = db.ExecContext(a.ctx, ddl)
+	if err != nil {
+		logger.Logger.Error("failed to execute DDL on shard", "project_id", projectID, "shard_id", shardID, "error", err)
+	}
 	return err
 }
 
@@ -1023,8 +1027,93 @@ func (a *App) ExecuteSQL(projectID string, sqlText string) ([]executor.Execution
 	}
 	return result, nil
 }
-//todo :- add schema execution methods & update frontend 
 
-//ExecuteProjectSchema
-//RetrySchemaExecution
-//GetSchemaCapabilities
+// project cannot be active,sets schema operations state with reason
+func (a *App) GetSchemaCapabilities(projectId string) (*SchemaCapabilities, error) {
+	c := &SchemaCapabilities{}
+	projectStatus, err := a.FetchProjectStatus(projectId)
+	if err != nil {
+		return nil, err
+	}
+	if projectStatus == "active" {
+		c.Reason = "Project is active"
+		return c, nil
+	}
+
+	schema, _ := a.GetCurrentSchema(projectId)
+	if schema == nil {
+		c.CanCreateDraft = true
+		return c, nil
+	}
+
+	switch schema.State {
+	case "draft":
+		c.CanEditDraft = true
+		c.CanCommit = true
+	case "pending":
+		allActive, err := a.checkAllShardsActive(projectId)
+		if err != nil {
+			return nil, err
+		}
+		if allActive {
+			c.CanExecute = true
+		} else {
+			c.Reason = "All shards must be active "
+		}
+	case "failed":
+		c.CanRetry = true
+	case "applied":
+		c.CanCreateDraft = true
+	}
+	return c, nil
+}
+
+// todo :- add schema execution methods & update frontend
+func (a *App) ExecuteProjectSchema(projectId string) error {
+	c, err := a.GetSchemaCapabilities(projectId)
+	if err != nil {
+		a.emitter.Error("Schema execution failed", "application - ExecuteProjectSchema", map[string]string{
+			"project_id": projectId,
+			"error":      err.Error(),
+		})
+		return err
+	}
+	if !c.CanExecute {
+		a.emitter.Warn("Schema execution not allowed", "application - ExecuteProjectSchema", map[string]string{
+			"project_id": projectId,
+			"reason":     c.Reason,
+		})
+		return errors.New("schema execution not allowed")
+	}
+
+	err = executor.ExecuteProjectSchema(
+		a.ctx,
+		projectId,
+		a.ProjectSchemaRepo,
+		a.ShardRepo,
+		a.SchemaExecutionStatusRepo,
+		func(shardID string, ddl string) error {
+			return a.execDDLonShard(projectId, shardID, ddl)
+		},
+	)
+
+	if err != nil {
+		logger.Logger.Error("failed to execute project schema", "project_id", projectId, "error", err)
+		a.emitter.Error("Project schema execution failed", "application - ExecuteProjectSchema", map[string]string{
+			"project_id": projectId,
+			"error":      err.Error(),
+		})
+		return err
+	}
+
+	logger.Logger.Info("Successfully executed projects schema", "project_id", projectId)
+	a.emitter.Info("Project schema execution successfull", "application - ExecuteProjectSchema", map[string]string{
+		"project_id": projectId,
+	})
+
+	return nil
+}
+
+func (a *App) RetrySchemaExecution(projectId string) error {
+	return executor.RetryFailedSchema(a.ctx, projectId, a.ProjectSchemaRepo, a.SchemaExecutionStatusRepo)
+}

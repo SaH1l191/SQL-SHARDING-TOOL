@@ -36,10 +36,8 @@ export function useShardActions() {
     } catch (error) {
       const errorMessage = String(error)
       setError(errorMessage)
-      addNotification({
-        type: 'error',
-        message: `Failed to fetch shards: ${errorMessage}`
-      })
+      // Error logged to terminal, no popup
+      throw error
     } finally {
       setLoading(false)
     }
@@ -59,10 +57,7 @@ export function useShardActions() {
     } catch (error) {
       const errorMessage = String(error)
       setError(errorMessage)
-      addNotification({
-        type: 'error',
-        message: `Failed to create shard: ${errorMessage}`
-      })
+      // Error logged to terminal, no popup
       throw error
     } finally {
       setLoading(false)
@@ -82,10 +77,7 @@ export function useShardActions() {
     } catch (error) {
       const errorMessage = String(error)
       setError(errorMessage)
-      addNotification({
-        type: 'error',
-        message: `Failed to delete shard: ${errorMessage}`
-      })
+      // Error logged to terminal, no popup
       // Re-fetch shards to ensure UI is in sync with backend
       if (projectId) {
         await fetchShards(projectId)
@@ -109,10 +101,7 @@ export function useShardActions() {
     } catch (error) {
       const errorMessage = String(error)
       setError(errorMessage)
-      addNotification({
-        type: 'error',
-        message: `Failed to activate shard: ${errorMessage}`
-      })
+      // Error logged to terminal, no popup
       throw error
     } finally {
       setLoading(false)
@@ -132,10 +121,7 @@ export function useShardActions() {
     } catch (error) {
       const errorMessage = String(error)
       setError(errorMessage)
-      addNotification({
-        type: 'error',
-        message: `Failed to deactivate shard: ${errorMessage}`
-      })
+      // Error logged to terminal, no popup
       throw error
     } finally {
       setLoading(false)
@@ -156,10 +142,7 @@ export function useShardActions() {
         return null
       }
       setError(errorMessage)
-      addNotification({
-        type: 'error',
-        message: `Failed to fetch shard connection: ${errorMessage}`
-      })
+      // Error logged to terminal, no popup
       throw error
     }
   }, [setConnection, setError, clearError, addNotification])
@@ -196,10 +179,7 @@ export function useShardActions() {
     } catch (error) {
       const errorMessage = String(error)
       setError(errorMessage)
-      addNotification({
-        type: 'error',
-        message: `Failed to update shard connection: ${errorMessage}`
-      })
+      // Error logged to terminal, no popup
       throw error
     } finally {
       setLoading(false)

@@ -25,6 +25,28 @@ export namespace executor {
 
 export namespace main {
 	
+	export class SchemaCapabilities {
+	    can_create_draft: boolean;
+	    can_edit_draft: boolean;
+	    can_commit: boolean;
+	    can_execute: boolean;
+	    can_retry: boolean;
+	    reason: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new SchemaCapabilities(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.can_create_draft = source["can_create_draft"];
+	        this.can_edit_draft = source["can_edit_draft"];
+	        this.can_commit = source["can_commit"];
+	        this.can_execute = source["can_execute"];
+	        this.can_retry = source["can_retry"];
+	        this.reason = source["reason"];
+	    }
+	}
 	export class WailsConfig {
 	    WindowTitle: string;
 	    WindowWidth: number;
@@ -125,7 +147,7 @@ export namespace repository {
 	    schema_id: string;
 	    shard_id: string;
 	    state: string;
-	    err_msg: string;
+	    error_message: string;
 	    // Go type: time
 	    executed_at: any;
 	
@@ -139,7 +161,7 @@ export namespace repository {
 	        this.schema_id = source["schema_id"];
 	        this.shard_id = source["shard_id"];
 	        this.state = source["state"];
-	        this.err_msg = source["err_msg"];
+	        this.error_message = source["error_message"];
 	        this.executed_at = this.convertValues(source["executed_at"], null);
 	    }
 	

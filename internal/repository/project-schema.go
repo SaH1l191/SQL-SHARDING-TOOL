@@ -268,6 +268,9 @@ func (p *ProjectSchemaRepository) ProjectSchemaGetLatest(ctx context.Context, pr
 		&latestSchema.CommittedAt,
 		&latestSchema.AppliedAt,
 	)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
 	if err != nil {
 		return nil, err
 	}

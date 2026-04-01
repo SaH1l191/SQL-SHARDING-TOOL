@@ -66,6 +66,10 @@ export function DeleteShard(arg1) {
   return window['go']['main']['App']['DeleteShard'](arg1);
 }
 
+export function ExecuteProjectSchema(arg1) {
+  return window['go']['main']['App']['ExecuteProjectSchema'](arg1);
+}
+
 export function ExecuteSQL(arg1, arg2) {
   return window['go']['main']['App']['ExecuteSQL'](arg1, arg2);
 }
@@ -102,6 +106,10 @@ export function GetProjects() {
   return window['go']['main']['App']['GetProjects']();
 }
 
+export function GetSchemaCapabilities(arg1) {
+  return window['go']['main']['App']['GetSchemaCapabilities'](arg1);
+}
+
 export function GetSchemaExecutionStatus(arg1) {
   return window['go']['main']['App']['GetSchemaExecutionStatus'](arg1);
 }
@@ -132,6 +140,10 @@ export function RecomputeKeys(arg1) {
 
 export function ReplaceShardKeys(arg1, arg2) {
   return window['go']['main']['App']['ReplaceShardKeys'](arg1, arg2);
+}
+
+export function RetrySchemaExecution(arg1) {
+  return window['go']['main']['App']['RetrySchemaExecution'](arg1);
 }
 
 export function RetryShardConnections(arg1) {
