@@ -1,138 +1,22 @@
-dependencies : 
-go get github.com/golang-migrate/migrate/v4  github.com/google/uuid  github.com/lib/pq  github.com/pganalyze/pg_query_go/v5  github.com/joho/godotenv
+ # SQL Sharding Tool
 
+## Dependencies
 
+```bash
+go get github.com/golang-migrate/migrate/v4 \
+    github.com/google/uuid \
+    github.com/lib/pq \
+    github.com/pganalyze/pg_query_go/v5 \
+    github.com/joho/godotenv
+```
 
-It parses DDL → walks the AST → emits:
+---
 
-Nodes → []repository.Column
-Edges → []repository.FkEdges
+## Graph Architecture
 
-Those two slices are the graph in flat form.
+### DDL → AST → Graph
 
-Nodes (vertices)
-Each column becomes a node:
-repository.Column{
-    TableName,
-    ColumnName,
-}
-
-
-Edges (relationships)
-Foreign keys become edges:
-repository.FkEdges{
-    ChildTable,
-    ChildColumn,
-    ParentTable,
-    ParentColumn,
-}
-
-This is effectively:
-(child_table.child_column) ───▶ (parent_table.parent_column)
-directed edge
-
-DB-friendly flat data, not an in-memory graph 
-
-AST traversal → Graph extraction
-still flat representation, not adjacency list
-
-everytime replace instead of update
-Graph must be consistent snapshot
-This avoids:
-orphan edges
-partial updates
-schema drift bugs
-
-
-Graph Algorithm #1 : tc -> O(n)
-Fanout (fanout.go)
-In-degree (classic graph metric)
-s.IncomingFkCount++
-
-Unique neighbor count
-childTableSets[parent][fk.ChildTable]
-
-Graph Algorithm #2 : tc -> O(n^3)
-Ranking (ranker.go)
-In-degree centrality IncomingFkCount * 10
-Breadth of influence ReferencingTableCount * 5
-Reverse edge signal(FK child) if isFKChild → +20
-Root Affinity Second-order graph traversal
-basically checking : child → parent → parent's importance
-Propagation of centrality (like PageRank-lite)
-
-Primary Key bonus +10
-Penalty (data distribution) text → -15
-
-Sorting
-sort.SliceStable
-Ensures:
-deterministic output
-avoids Go map randomness
-
-
-Graph Construction
-AST traversal
-Builds edge list
-2. Degree Centrality
-IncomingFkCount
-3. Neighborhood Analysis
-ReferencingTableCount
-4. Reverse Edge Detection
-isFKChild
-5. 2-Hop Traversal
-child → parent → fanout(parent)
-
-That’s:
-
-Second-order dependency analysis
-
-6. Weighted Scoring Model
-
-This is:
-
-Heuristic centrality ranking
-
-(Not pure PageRank, but similar intuition)
-
-🔥 The Hidden Design (Very Important)
-
-You have decoupled the system perfectly:
-
-Layer 1 — Extraction
-DDL → AST → (columns, edges)
-Layer 2 — Storage
-edges → DB (cached graph)
-Layer 3 — Computation
-edges → fanout stats
-Layer 4 — Decision
-fanout + metadata → shard key
-
-Stateless computation
-
-You can recompute anytime
-
- DB as graph cache
-
-No need to rebuild from SQL every time
-
- O(n) algorithms
-
-Scales well
-
- Extensible
-
-You can easily add:
-
-join cost estimation
-query routing
-lineage tracking
-
-
-
-
-Converting SQL schema → Graph → Graph analytics → Shard key decision
-
+```
 DDL (SQL)
   ↓
 AST (pg_query)
@@ -146,35 +30,240 @@ Graph Analysis (fanout)
 Graph Scoring (centrality + heuristics)
   ↓
 Shard Key Decision
+```
 
-FNV-1a Hash :
-Deterministic
-simple XOR + multiply
-Good distribution (spreads values well across the 64-bit space:)
+---
 
+## Data Model
 
-consistent hashing ring
-Each real shard is represented by many virtual nodes (150 duplicate virtual nodes for load distribution)
-With virtual nodes:
+### Nodes (Vertices)
 
-3 shards × 150 = 450 points
-Keys get distributed much more evenly
+Each column becomes a node:
 
-vnodes: sorted list of all virtual nodes (this IS the ring)
-shards: map of shardID → actual shard
+```go
+repository.Column{
+    TableName,
+    ColumnName,
+}
+```
 
-sorted by hash value for reducing search time by runnning BS over  hash to find the first vnode whose hash ≥ key hash
-<!-- O(N × V log(N × V))
-N = shards, V = 150 -->
-Minimal Data Movement : 
-adding/removing shard:
-Only nearby keys move
-~ 1/N keys affected
+### Edges (Relationships)
 
+Foreign keys become edges:
 
-![alt text](image.png)
+```go
+repository.FkEdges{
+    ChildTable,
+    ChildColumn,
+    ParentTable,
+    ParentColumn,
+}
+```
 
+This represents:
+```
+(child_table.child_column) ───▶ (parent_table.parent_column)
+```
+Directed edge from child to parent.
 
+---
 
-![alt text](image-1.png)
-join:-shuffle,non collocated
+## Design Principles
+
+### DB-Friendly Flat Data
+
+- Not an in-memory graph structure
+- Flat representation (not adjacency list)
+- AST traversal → Graph extraction
+
+### Replace vs Update
+
+Graph must be a **consistent snapshot** — replace instead of update every time. This avoids:
+- Orphan edges
+- Partial updates
+- Schema drift bugs
+
+---
+
+## Graph Algorithms
+
+### Algorithm #1: Fanout — `O(n)`
+
+**File:** `fanout.go`
+
+| Metric | Implementation |
+|--------|---------------|
+| In-degree | `s.IncomingFkCount++` |
+| Unique neighbor count | `childTableSets[parent][fk.ChildTable]` |
+
+### Algorithm #2: Ranking — `O(n³)`
+
+**File:** `ranker.go`
+
+| Factor | Weight |
+|--------|--------|
+| In-degree centrality | `IncomingFkCount * 10` |
+| Breadth of influence | `ReferencingTableCount * 5` |
+| Reverse edge signal (FK child) | `+20` if `isFKChild` |
+| Root Affinity (2nd-order traversal) | child → parent → parent's importance |
+| Primary Key bonus | `+10` |
+| Penalty (text data) | `-15` |
+
+**Propagation of centrality** — like PageRank-lite
+
+---
+
+## Graph Construction Pipeline
+
+```
+1. AST traversal
+        ↓
+2. Builds edge list
+        ↓
+3. Degree Centrality (IncomingFkCount)
+        ↓
+4. Neighborhood Analysis (ReferencingTableCount)
+        ↓
+5. Reverse Edge Detection (isFKChild)
+        ↓
+6. 2-Hop Traversal
+   child → parent → fanout(parent)
+        ↓
+7. Weighted Scoring Model
+```
+
+- **Second-order dependency analysis**
+- **Heuristic centrality ranking** (similar intuition to PageRank)
+
+---
+
+## Sorting
+
+```go
+sort.SliceStable
+```
+
+Ensures:
+- Deterministic output
+- Avoids Go map randomness
+
+---
+
+## Layered Architecture
+
+The system is decoupled into 4 perfect layers:
+
+| Layer | Purpose | Data Flow |
+|-------|---------|-----------|
+| **1 — Extraction** | DDL → AST | `(columns, edges)` |
+| **2 — Storage** | DB as graph cache | `edges → DB` |
+| **3 — Computation** | Stateless recomputation | `edges → fanout stats` |
+| **4 — Decision** | Shard key selection | `fanout + metadata → shard key` |
+
+### Benefits
+
+- Stateless computation — recompute anytime
+- DB as graph cache — no need to rebuild from SQL every time
+- `O(n)` algorithms — scales well
+- Extensible — easily add:
+  - Join cost estimation
+  - Query routing
+  - Lineage tracking
+
+---
+
+## Consistent Hashing Ring
+
+### FNV-1a Hash
+
+- **Deterministic**: simple XOR + multiply
+- **Good distribution**: spreads values well across 64-bit space
+
+### Virtual Nodes
+
+Each real shard is represented by many virtual nodes (150 duplicates for load distribution).
+
+**Example:** 3 shards × 150 = 450 points → keys distributed much more evenly
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                    HASH RING (0 - 2⁶⁴-1)                │
+├─────────────────────────────────────────────────────────┤
+│  S0.v0  S2.v1  S1.v2  S0.v3  S2.v4  S1.v0  ... S2.v149 │
+│   ●      ●      ●      ●      ●      ●           ●     │
+└─────────────────────────────────────────────────────────┘
+```
+
+### Data Structures
+
+- `vnodes`: sorted list of all virtual nodes (this IS the ring)
+- `shards`: map of `shardID → actual shard`
+
+### Lookup
+
+Binary search for first vnode where `vnode.hash ≥ key.hash`
+
+**Complexity:** `O(N × V log(N × V))` where N = shards, V = 150
+
+### Minimal Data Movement
+
+When adding/removing shards:
+- Only nearby keys move
+- `~ 1/N` keys affected
+
+---
+
+## Join Strategies
+
+| Strategy | Description |
+|----------|-------------|
+| **Shuffle** | Cross-shard join requiring data movement |
+| **Non-collocated** | Tables on different shards, requires network transfer |
+
+---
+
+## Architecture Diagram
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     SQL SHARDING TOOL                           │
+├─────────────────────────────────────────────────────────────────┤
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────────┐  │
+│  │   DDL Input │  │   AST Walk  │  │   Graph Extraction      │  │
+│  │   (SQL)     │──▶│   (pg_query)│──▶│   Nodes + Edges         │  │
+│  └─────────────┘  └─────────────┘  └─────────────────────────┘  │
+│                                               │                 │
+│                                               ▼                 │
+│                                 ┌─────────────────────────┐     │
+│                                 │   PostgreSQL (Cache)    │     │
+│                                 │   • columns table       │     │
+│                                 │   • fk_edges table      │     │
+│                                 └─────────────────────────┘     │
+│                                               │                 │
+│                    ┌──────────────────────────┼──────────┐   │
+│                    │                          │          │   │
+│                    ▼                          ▼          ▼   │
+│           ┌─────────────┐            ┌─────────────┐  ┌────────┴─┐│
+│           │  Fanout     │            │  Ranker     │  │  Shard   ││
+│           │  O(n)       │            │  O(n³)      │  │  Router  ││
+│           └─────────────┘            └─────────────┘  └────┬─────┘│
+│                                                             │     │
+│                                      ┌──────────────────────┘     │
+│                                      ▼                            │
+│                         ┌─────────────────────┐                   │
+│                         │  Consistent Hashing │                   │
+│                         │  • 150 vnodes/shard │                   │
+│                         │  • FNV-1a hash      │                   │
+│                         └─────────────────────┘                   │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Screenshots
+
+### Architecture Overview
+![Architecture](image.png)
+
+### Join Strategy
+![Join Strategy](image-1.png)

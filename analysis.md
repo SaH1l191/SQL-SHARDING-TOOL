@@ -1,46 +1,52 @@
-
 SQL is:
+
 string-based
 ambiguous
 order-dependent
 
 Example:
+
 ALTER TABLE users ADD email TEXT;
-This doesn’t explicitly tell you:
+
+This does not explicitly convey:
+
 current schema state
 conflicts
 dependencies
- So you convert it into something deterministic: AST + LogicalSchema
 
-2. You need a “source of truth”
-Your metadata tables (columns, fk_edges) become:
- The canonical schema state (not the database itself)
-Why?
+So it is converted into something deterministic: AST + LogicalSchema.
 
-Because real DB:
-is hard to inspect efficiently
-varies across shards
-may drift
+2. A “source of truth” is needed
 
+Metadata tables (columns, fk_edges) become the canonical schema state (not the database itself).
+
+Reason:
+
+The real database is hard to inspect efficiently.
+It varies across shards.
+It may drift.
 3. Sharding REQUIREMENT
-Sharding systems (like what Vitess or CockroachDB do) need:
+
+Sharding systems (like those in Vitess or CockroachDB) require:
+
 full schema graph
-FK relationships
+foreign key relationships
 column-level understanding
- Raw SQL execution cannot give this safely.
- HOW Your Pipeline Works (Deep Explanation)
- STEP 1 — SQL → AST
+
+Raw SQL execution cannot provide this safely.
+
+How the Pipeline Works (Deep Explanation)
+STEP 1 — SQL → AST
+
 parseDDL(sql)
-What’s really happening:
 
-You use a PostgreSQL parser (like pg_query)
+What happens:
 
-It builds a tree structure
+A PostgreSQL parser (like pg_query) builds a tree structure.
 
 Why AST?
-Because:
 
-Trees are structured, SQL strings are not.
+Trees are structured, whereas SQL strings are not.
 
 Example:
 
@@ -52,15 +58,13 @@ CreateStmt
  ├── table: users
  └── column: id (PK)
 
- Now your system can programmatically reason about SQL.
+Now the system can programmatically reason about SQL.
 
- STEP 2 — AST → LogicalSchema (delta)
+STEP 2 — AST → LogicalSchema (delta)
 
-You extract only the change.
+Only the change is extracted.
 
 Why delta?
-
-Because:
 
 Every SQL statement is a transformation, not a full schema.
 
@@ -73,178 +77,125 @@ Delta:
 users:
   + email
 
- This keeps operations:
+Benefits:
 
-small
-
-composable
-
-trackable
-
+Keeps operations small
+Composable
+Trackable
 STEP 3 — Metadata → LogicalSchema (base)
 
-You reconstruct current schema from your DB metadata.
-Why not query Postgres directly every time?
-Because:
-slow
-inconsistent across shards
-harder to control
+The current schema is reconstructed from DB metadata.
 
+Reason for not querying PostgreSQL directly every time:
 
- STEP 4 — Merge (THE HEART)
+Slow
+Inconsistent across shards
+Harder to control
+STEP 4 — Merge (THE HEART)
+
 MergeLogicalSchema(base, delta)
 
 Example:
+
 Base:
+
 users:
   id
+
 Delta:
+
 + email
+
 After merge:
+
 users:
   id
   email
-Why this is critical:
 
-Because now  can:
- Validate BEFORE execution
-duplicate column?
-missing parent table for FK?
-type mismatch?
- Detect conflicts
-ADD COLUMN id INT
+Why critical:
 
-→ already exists 
- This is exactly what advanced systems do internally:
+Validates before execution
+Detects duplicates, missing parent tables for FK, type mismatches
+
+Example:
+
+ADD COLUMN id INT → already exists
+
+This is exactly what advanced systems do internally:
+
 Vitess schema tracker
 CockroachDB planner
+STEP 5 — Flatten
 
- STEP 5 — Flatten
+The graph is converted to tables.
 
-You convert:
+Reason:
 
-Graph → Tables
-
-Why?
-
-Because relational DBs store:
-
-rows, not trees
+Relational databases store rows, not trees.
 
 Logical:
+
 users:
   id
   email
 orders.user_id → users.id
+
 Flattened:
+
 columns table
 fk_edges table
 
- This makes it:
+Benefits:
 
-queryable
-
-indexable
-
-scalable
-
- STEP 6 — Replace Metadata
+Queryable
+Indexable
+Scalable
+STEP 6 — Replace Metadata
 DELETE + INSERT
-Why replace instead of update?
 
-Because:
+Why replace instead of update:
 
-Schema is state, not events
+Schema represents state, not events
 
 Benefits:
 
-atomic
-
-consistent snapshot
-
-no partial updates
-
- What This Enables (REAL POWER)
-1.  Pre-flight validation
-
-Before running SQL:
-
-check FK integrity
-
-ensure table exists
-
-prevent bad migrations
-
-2.  Schema evolution engine
-
-You can:
-
-diff schemas
-
-generate migrations
-
-rollback safely
-
-3.  Sharding intelligence
-
-Because you know:
-
-orders.user_id → users.id
-
-You can infer:
-
-co-location
-
-shard keys
-
-4.  Query routing (future)
-
+Atomic
+Consistent snapshot
+No partial updates
+What This Enables (REAL POWER)
+Pre-flight validation
+Check FK integrity
+Ensure table exists
+Prevent bad migrations
+Schema evolution engine
+Diff schemas
+Generate migrations
+Rollback safely
+Sharding intelligence
+Orders.user_id → users.id
+Can infer co-location and shard keys
+Query routing (future)
 Incoming query:
-
 SELECT * FROM orders WHERE user_id = 10;
-
-Your system knows:
-
-shard key = user_id
-
-route to correct shard
-
-5.  Dependency graph
-
-You’ve built:
-
+System knows shard key = user_id
+Routes to correct shard
+Dependency graph
 users → orders → payments
-
-Used for:
-
-execution order
-
-cascading operations
-
-safe deletes
-
+Used for execution order, cascading operations, safe deletes
 The BIG Insight
 
-What you built is:
-
-A compiler pipeline for SQL schema
-
-Just like a programming language:
+This creates a compiler pipeline for SQL schema, analogous to a programming language:
 
 Code → AST → IR → Optimized → Executed
 
-Your version:
+The pipeline:
 
 SQL → AST → LogicalSchema → Metadata DB
- Why this is NECESSARY (not optional)
+Why This is NECESSARY (not optional)
 
-If you want:
+Required for:
 
-sharding
-
-multi-tenant systems
-
-safe migrations
-
-distributed SQL
-
+Sharding
+Multi-tenant systems
+Safe migrations
+Distributed SQL
