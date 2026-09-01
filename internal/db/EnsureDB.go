@@ -35,6 +35,7 @@ func EnsureDatabaseExists() error {
 			return fmt.Errorf("failed to create database: %w", err)
 		}
 	}
+
 	defer sysDB.Close()
 	return nil
 }
