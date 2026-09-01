@@ -1,58 +1,25 @@
-import { useEffect } from 'react'
+import { useState } from 'react'
 import { Sidebar } from './components/Sidebar'
 import { ProjectsPage } from './pages/ProjectsPage'
-import { ProjectDetailPage } from './pages/ProjectDetailPage'
+import { ShardsPage } from './pages/ShardsPage'
 import { SchemaPage } from './pages/SchemaPage'
 import { QueryPage } from './pages/QueryPage'
-import { Terminal } from './components/Terminal'
-import { useProjectStore } from './stores/projectStore'
-import { useAppStore } from './stores/appStore'
-import { useProjectActions } from './hooks/useProjectActions'
-import type { Project } from './types'
+import { useProjects } from './hooks/useProjects'
+import type { Project, View } from './types'
 
 export default function App() {
-  const { projects, selectedProject, setSelectedProject, loading, error } = useProjectStore()
-  const { currentView, setCurrentView } = useAppStore()
-  const { fetchProjects, createProject, deleteProject, activateProject } = useProjectActions()
+  const { projects, loading, error, create, remove, activate } = useProjects()
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null)
+  const [view, setView] = useState<View>('projects')
 
-  useEffect(() => {
-    fetchProjects()
-  }, [fetchProjects])
-
-  const handleSelectProject = (project: Project) => {
-    setSelectedProject(project)
-    setCurrentView('project-detail')
-  }
-
-  const handleBackToProjects = () => {
-    setSelectedProject(null)
-    setCurrentView('projects')
+  const handleSelectProject = (p: Project) => {
+    setSelectedProject(p)
+    setView('shards')
   }
 
   const handleCreate = async (name: string, description: string) => {
-    try {
-      const p = await createProject(name, description)
-      setSelectedProject(p)
-      setCurrentView('project-detail')
-    } catch (error) {
-      // Error is handled by the hook
-    }
-  }
-
-  const handleDelete = async (id: string) => {
-    try {
-      await deleteProject(id)
-    } catch (error) {
-      // Error is handled by the hook
-    }
-  }
-
-  const handleActivate = async (id: string) => {
-    try {
-      await activateProject(id)
-    } catch (error) {
-      // Error is handled by the hook
-    }
+    const p = await create(name, description)
+    setSelectedProject(p)
   }
 
   return (
@@ -60,45 +27,43 @@ export default function App() {
       <Sidebar
         projects={projects}
         selectedProject={selectedProject}
-        activeView={currentView}
+        activeView={view}
         onSelectProject={handleSelectProject}
-        onNewProject={() => setCurrentView('projects')}
-        onViewChange={setCurrentView}
+        onNewProject={() => setView('projects')}
+        onViewChange={setView}
       />
 
       <main className="flex flex-1 flex-col overflow-hidden">
-        {currentView === 'projects' && (
+        {view === 'projects' && (
           <ProjectsPage
             projects={projects}
             loading={loading}
             error={error}
             onSelect={handleSelectProject}
             onCreate={handleCreate}
-            onDelete={handleDelete}
-            onActivate={handleActivate}
+            onDelete={remove}
+            onActivate={activate}
           />
         )}
-        {currentView === 'project-detail' && selectedProject && (
-          <ProjectDetailPage
+        {view === 'shards' && (
+          <ShardsPage
             project={selectedProject}
-            onBack={handleBackToProjects}
+            onNoProject={() => setView('projects')}
           />
         )}
-        {currentView === 'schema' && selectedProject && (
+        {view === 'schema' && (
           <SchemaPage
             project={selectedProject}
-            onNoProject={handleBackToProjects}
+            onNoProject={() => setView('projects')}
           />
         )}
-        {currentView === 'query' && selectedProject && (
+        {view === 'query' && (
           <QueryPage
             project={selectedProject}
-            onNoProject={handleBackToProjects}
+            onNoProject={() => setView('projects')}
           />
         )}
       </main>
-
-      <Terminal />
     </div>
   )
 }
