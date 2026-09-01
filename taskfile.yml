@@ -1,0 +1,49 @@
+version: "3"
+
+dotenv:
+  - .env
+
+vars:
+  DB_URL: "postgres://{{.DB_USER}}:{{.DB_PASSWORD}}@{{.DB_HOST}}:{{.DB_PORT}}/{{.DB_NAME}}?sslmode={{.DB_SSLMODE}}"
+
+tasks:
+  db:up:
+    desc: Start PostgreSQL
+    cmds:
+      - docker compose up -d postgres
+
+  db:down:
+    desc: Stop PostgreSQL
+    cmds:
+      - docker compose down
+
+  db:logs:
+    desc: Show PostgreSQL logs
+    cmds:
+      - docker compose logs -f postgres
+
+  db:migrate:
+    desc: Apply all pending migrations
+    cmds:
+      - goose -dir migrations postgres "{{.DB_URL}}" up
+
+  db:rollback:
+    desc: Roll back the last migration
+    cmds:
+      - goose -dir migrations postgres "{{.DB_URL}}" down
+
+  db:status:
+    desc: Show migration status
+    cmds:
+      - goose -dir migrations postgres "{{.DB_URL}}" status
+
+  db:reset:
+    desc: Roll back all migrations and re-apply
+    cmds:
+      - goose -dir migrations postgres "{{.DB_URL}}" reset
+      - goose -dir migrations postgres "{{.DB_URL}}" up
+
+  db:create:
+    desc: Create a new migration
+    cmds:
+      - goose -dir migrations create {{.name}} sql

@@ -1,35 +1,7 @@
-# Environment
+build/bin
+node_modules
+frontend/dist
 .env
-
-# Go build outputs
-/bin/
-/build/
-/tmp/
-*.exe
-*.exe~
-*.out
-
-# Wails build
-/dist/
-/frontend/dist/
-
-# Node
-/frontend/node_modules/
-
-# Logs
-*.log
-
-# OS files
-.DS_Store
-Thumbs.db
-
-# IDE
-.vscode/
-.idea/
-
-# Air (live reload)
 .air.toml
-
-# Database / local files (optional)
-*.db
-*.sqlite
+build/
+app

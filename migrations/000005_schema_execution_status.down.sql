@@ -1,1 +1,0 @@
-DROP TABLE IF EXISTS schema_execution_status;
